@@ -1,0 +1,236 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ============================================
+    // REGLAS PARA USUARIOS (users collection)
+    // ============================================
+    
+    /**
+     * Reglas para la colección 'users'
+     * - Los usuarios solo pueden leer su propio perfil
+     * - Los usuarios solo pueden crear/actualizar su propio perfil
+     * - El ID del documento debe coincidir con auth.uid para garantizar la seguridad
+     */
+    match /users/{userId} {
+      // Permite lectura a cualquier usuario autenticado
+      // (los usernames no son información sensible y se necesitan para mostrar en cuentas grupales)
+      allow read: if request.auth != null;
+      
+      // Permite creación solo si el usuario está autenticado y el ID coincide con auth.uid
+      allow create: if request.auth != null 
+                    && request.auth.uid == userId
+                    && request.resource.data.id == userId
+                    && request.resource.data.username is string
+                    && request.resource.data.createdAt is timestamp;
+      
+      // Permite actualización solo del propio perfil
+      allow update: if request.auth != null && request.auth.uid == userId;
+      
+      // No permite eliminación (o puedes permitirla solo para el propio usuario)
+      allow delete: if false;
+    }
+    
+    // ============================================
+    // REGLAS PARA CUENTAS (accounts collection)
+    // ============================================
+    
+    /**
+     * Reglas para la colección 'accounts'
+     * REGLA CRÍTICA: Solo los miembros (auth.uid está en memberIds) pueden leer/escribir
+     * 
+     * Estructura esperada:
+     * - id: string
+     * - name: string
+     * - type: 'INDIVIDUAL' | 'GROUP'
+     * - currency: 'EUR' | 'USD' | 'COP'
+     * - ownerId: string
+     * - memberIds: array<string>
+     * - joinCode: string (opcional, solo para GROUP)
+     * - createdAt: timestamp
+     * - updatedAt: timestamp
+     */
+    match /accounts/{accountId} {
+      
+      /**
+       * Función helper: Verifica si el usuario autenticado es miembro de la cuenta
+       * Esta es la verificación CRÍTICA para seguridad
+       */
+      function isMember() {
+        return request.auth != null 
+               && request.auth.uid in resource.data.memberIds;
+      }
+      
+      /**
+       * Función helper: Verifica si el usuario autenticado es el propietario
+       */
+      function isOwner() {
+        return request.auth != null 
+               && resource.data.ownerId == request.auth.uid;
+      }
+      
+      /**
+       * Función helper: Verifica si el usuario autenticado puede ser miembro (para creación)
+       */
+      function canBeMember(userId) {
+        return request.auth != null && request.auth.uid == userId;
+      }
+      
+      /**
+       * LECTURA (read)
+       * Solo los miembros pueden leer la cuenta
+       * Esto incluye leer el documento completo, lo cual es necesario para
+       * ver detalles, balance calculado, etc.
+       */
+      allow read: if request.auth != null 
+                  && request.auth.uid in resource.data.memberIds;
+      
+      /**
+       * CREACIÓN (create)
+       * El usuario autenticado debe:
+       * 1. Estar autenticado
+       * 2. Ser el ownerId (solo puede crear cuentas donde es el dueño)
+       * 3. Estar incluido en memberIds
+       * 4. Cumplir con la estructura de datos esperada
+       */
+      allow create: if request.auth != null
+                    && request.resource.data.ownerId == request.auth.uid
+                    && request.auth.uid in request.resource.data.memberIds
+                    && request.resource.data.id is string
+                    && request.resource.data.name is string
+                    && request.resource.data.type in ['INDIVIDUAL', 'GROUP']
+                    && request.resource.data.currency in ['EUR', 'USD', 'COP']
+                    && request.resource.data.memberIds is list
+                    && request.resource.data.createdAt is timestamp
+                    && request.resource.data.updatedAt is timestamp;
+      
+      /**
+       * ACTUALIZACIÓN (update)
+       * Solo el propietario puede actualizar:
+       * - Nombre
+       * - Moneda
+       * - Agregar/remover miembros (modificando memberIds)
+       * 
+       * Restricciones:
+       * - No se puede cambiar el ownerId
+       * - El usuario actual debe permanecer en memberIds
+       */
+      allow update: if request.auth != null
+                    && request.auth.uid == resource.data.ownerId
+                    && request.auth.uid in resource.data.memberIds
+                    && request.auth.uid in request.resource.data.memberIds
+                    && resource.data.ownerId == request.resource.data.ownerId
+                    && request.resource.data.id == resource.data.id
+                    && request.resource.data.type == resource.data.type;
+      
+      /**
+       * ELIMINACIÓN (delete)
+       * Solo el propietario puede eliminar la cuenta
+       * Nota: Considera eliminar también todas las transacciones asociadas
+       * (esto debe hacerse mediante Cloud Functions)
+       */
+      allow delete: if request.auth != null 
+                    && resource.data.ownerId == request.auth.uid;
+    }
+    
+    // ============================================
+    // REGLAS PARA TRANSACCIONES (subcolección transactions dentro de accounts)
+    // ============================================
+    
+    /**
+     * Reglas para la subcolección 'transactions' dentro de 'accounts'
+     * REGLA CRÍTICA: Solo los miembros de la cuenta pueden leer/escribir transacciones
+     * 
+     * Estructura: accounts/{accountId}/transactions/{transactionId}
+     * 
+     * La ventaja de usar subcolecciones es que podemos acceder directamente
+     * al documento padre (la cuenta) sin necesidad de consultas adicionales.
+     */
+    match /accounts/{accountId} {
+      
+      /**
+       * Función helper: Verifica si el usuario es miembro de la cuenta
+       * Usa el documento padre directamente
+       */
+      function isAccountMember() {
+        return request.auth != null 
+               && request.auth.uid in resource.data.memberIds;
+      }
+      
+      /**
+       * Función helper: Verifica que el usuario puede crear transacciones
+       * Verifica usando el documento padre (la cuenta)
+       */
+      function canCreateTransaction() {
+        let account = get(/databases/$(database)/documents/accounts/$(accountId));
+        return request.auth != null
+               && account != null
+               && request.auth.uid in account.data.memberIds;
+      }
+      
+      /**
+       * Subcolección de transacciones
+       * Todas las transacciones están bajo accounts/{accountId}/transactions/{transactionId}
+       */
+      match /transactions/{transactionId} {
+        
+        /**
+         * LECTURA (read)
+         * Solo los miembros de la cuenta pueden leer las transacciones
+         * Verificamos el documento padre (la cuenta) para ver si el usuario es miembro
+         */
+        allow read: if request.auth != null 
+                    && request.auth.uid in get(/databases/$(database)/documents/accounts/$(accountId)).data.memberIds;
+        
+        /**
+         * CREACIÓN (create)
+         * El usuario debe:
+         * 1. Estar autenticado
+         * 2. Ser miembro de la cuenta (verificado consultando el documento padre)
+         * 3. El userId debe coincidir con auth.uid
+         * 4. El accountId debe coincidir con el accountId del path
+         * 5. Cumplir con la estructura de datos esperada
+         */
+        allow create: if canCreateTransaction()
+                      && request.resource.data.userId == request.auth.uid
+                      && request.resource.data.accountId == accountId
+                      && request.resource.data.type in ['INCOME', 'EXPENSE']
+                      && request.resource.data.amount is number
+                      && request.resource.data.amount > 0
+                      && request.resource.data.category is string
+                      && request.resource.data.date is timestamp
+                      && request.resource.data.createdAt is timestamp;
+        
+        /**
+         * ACTUALIZACIÓN (update)
+         * Solo los miembros de la cuenta pueden actualizar transacciones
+         * Restricciones:
+         * - No se puede cambiar el accountId (ya está fijado en el path)
+         * - El monto debe ser positivo
+         */
+        allow update: if request.auth != null 
+                      && request.auth.uid in get(/databases/$(database)/documents/accounts/$(accountId)).data.memberIds
+                      && request.resource.data.accountId == accountId
+                      && request.resource.data.amount > 0;
+        
+        /**
+         * ELIMINACIÓN (delete)
+         * Solo los miembros de la cuenta pueden eliminar transacciones
+         * (O puedes restringir solo al creador: resource.data.userId == request.auth.uid)
+         */
+        allow delete: if request.auth != null 
+                      && request.auth.uid in get(/databases/$(database)/documents/accounts/$(accountId)).data.memberIds;
+      }
+    }
+    
+    // ============================================
+    // DENEGAR ACCESO POR DEFECTO
+    // ============================================
+    
+    // Cualquier otra colección o ruta no especificada se deniega por defecto
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,0 +1,379 @@
+/**
+ * Language Context - Maneja el idioma de la aplicación (español/inglés)
+ * Persiste la preferencia del usuario en AsyncStorage
+ */
+
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { createContext, useContext, useEffect, useState } from 'react';
+
+type Language = 'es' | 'en';
+
+interface LanguageContextType {
+  language: Language;
+  setLanguage: (lang: Language) => Promise<void>;
+  t: (key: string) => string;
+}
+
+const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
+
+const LANGUAGE_STORAGE_KEY = '@app_language';
+
+// Traducciones
+const translations: Record<Language, Record<string, string>> = {
+  es: {
+    // Home Screen
+    'home.title': 'Mis Finanzas',
+    'home.subtitle': 'finanzas',
+    'home.subtitle.singular': 'finanza',
+    'home.no.finances': 'No tienes finanzas',
+    'home.empty.title': 'No tienes cuentas aún',
+    'home.empty.text': 'Crea tu primera cuenta o únete a un grupo para comenzar',
+    'home.empty.button': 'Crear Cuenta',
+    'home.loading': 'Cargando cuentas...',
+    'home.balance': 'Balance',
+    'home.type.individual': 'Individual',
+    'home.type.group': 'Grupo',
+    // Settings
+    'settings.title': 'Configuración',
+    'settings.appearance': 'Apariencia',
+    'settings.appearance.light': 'Modo Claro',
+    'settings.appearance.dark': 'Modo Oscuro',
+    'settings.appearance.system': 'Sistema',
+    'settings.language': 'Idioma',
+    'settings.language.es': 'Español',
+    'settings.language.en': 'Inglés',
+    'settings.logout': 'Cerrar Sesión',
+    'settings.logout.confirm': '¿Estás seguro de que quieres cerrar sesión?',
+    'settings.logout.cancel': 'Cancelar',
+    'settings.logout.confirm.button': 'Sí',
+    // Account Details
+    'account.back': 'Atrás',
+    'account.balance.total': 'Balance Total',
+    'account.type.personal': 'Cuenta personal',
+    'account.type.group': 'Cuenta conjunta',
+    'account.share.code.show': 'Ver Código de Unión',
+    'account.share.code.hide': 'Ocultar Código',
+    'account.transactions': 'Transacciones',
+    'account.transaction': 'transacción',
+    'account.transactions.plural': 'transacciones',
+    'account.view.all': 'Ver todas',
+    'account.empty.transactions': 'No hay transacciones aún',
+    'account.delete': 'Eliminar Cuenta',
+    'account.delete.confirm': '¿Estás seguro de que quieres eliminar esta cuenta?',
+    'account.delete.warning': 'ADVERTENCIA FINAL',
+    'account.delete.warning.text': 'Esta acción es irreversible. Todas las transacciones y datos se perderán para siempre.',
+    'account.delete.cancel': 'Cancelar',
+    'account.delete.confirm.button': 'ELIMINAR PERMANENTEMENTE',
+    'account.delete.continue': 'Continuar',
+    // Transactions
+    'transactions.all': 'Todas las Transacciones',
+    'transactions.filter': 'Filtrar transacciones',
+    'transactions.filter.title': 'Filtrar Transacciones',
+    'transactions.filter.type': 'Tipo',
+    'transactions.filter.type.all': 'Todos',
+    'transactions.filter.type.income': 'Ingresos',
+    'transactions.filter.type.expense': 'Gastos',
+    'transactions.filter.category': 'Categoría',
+    'transactions.filter.amount': 'Monto',
+    'transactions.filter.amount.min': 'Mínimo',
+    'transactions.filter.amount.max': 'Máximo',
+    'transactions.filter.user': 'Usuario',
+    'transactions.filter.me': 'Yo',
+    'transactions.filter.date.start': 'Fecha Inicio',
+    'transactions.filter.date.end': 'Fecha Fin',
+    'transactions.filter.apply': 'Aplicar filtros',
+    'transactions.filter.reset': 'Limpiar filtros',
+    'transactions.filter.cancel': 'Cancelar',
+    'transactions.empty': 'No hay transacciones',
+    'transactions.empty.filtered': 'Intenta cambiar los filtros',
+    'transactions.empty.default': 'Las transacciones aparecerán aquí',
+    'transactions.loading': 'Cargando transacciones...',
+    'transactions.delete': 'Eliminar Transacción',
+    'transactions.delete.confirm': '¿Estás seguro de que quieres eliminar esta transacción?',
+    'transactions.delete.cancel': 'Cancelar',
+    'transactions.delete.delete': 'Eliminar',
+    // Transaction Add
+    'transaction.add.title': 'Nueva Transacción',
+    'transaction.add.type': 'Tipo de Transacción',
+    'transaction.add.type.income': 'Ingreso',
+    'transaction.add.type.expense': 'Gasto',
+    'transaction.add.amount': 'Monto',
+    'transaction.add.category': 'Categoría',
+    'transaction.add.note': 'Nota (opcional)',
+    'transaction.add.create': 'Agregar',
+    'transaction.add.create.income': 'Agregar Ingreso',
+    'transaction.add.create.expense': 'Agregar Gasto',
+    'transaction.add.cancel': 'Cancelar',
+    'transaction.add.error': 'Error al crear la transacción. Intenta de nuevo.',
+    'transaction.add.note.placeholder': 'Agrega una nota...',
+    // Transaction Categories
+    'category.income.salary': 'Salario',
+    'category.income.rent': 'Alquiler',
+    'category.income.bonus': 'Bonificación',
+    'category.income.sale': 'Venta',
+    'category.income.investment': 'Inversión',
+    'category.income.other': 'Otro Ingreso',
+    'category.expense.food': 'Comida',
+    'category.expense.transport': 'Transporte',
+    'category.expense.entertainment': 'Entretenimiento',
+    'category.expense.health': 'Salud',
+    'category.expense.education': 'Educación',
+    'category.expense.other': 'Otros Gastos',
+    // Account Create
+    'account.create.title': 'Crear Finanza',
+    'account.create.join': 'Unirse a Grupo',
+    'account.create.or.create': 'O crear finanza',
+    'account.create.name': 'Nombre de la Finanza',
+    'account.create.type': 'Tipo de Finanza',
+    'account.create.type.individual': 'Personal',
+    'account.create.type.group': 'Conjunta',
+    'account.create.currency': 'Moneda',
+    'account.create.join.code': 'Código de Unión',
+    'account.create.join.code.placeholder': 'Ingresa el código',
+    'account.create.create': 'Crear Finanza',
+    'account.create.join.button': 'Unirse',
+    'account.create.error': 'Error al crear la cuenta. Intenta de nuevo.',
+    // Login
+    'login.title': 'Iniciar Sesión',
+    'login.register': 'Crear Cuenta',
+    'login.username': 'Nombre de Usuario',
+    'login.password': 'Contraseña',
+    'login.username.placeholder': 'Ingresa tu nombre de usuario',
+    'login.password.placeholder': 'Ingresa tu contraseña',
+    'login.submit': 'Iniciar Sesión',
+    'login.create': 'Crear Cuenta',
+    'login.subtitle.login': 'Ingresa tus credenciales para continuar',
+    'login.subtitle.register': 'Crea una cuenta para comenzar',
+    'login.toggle.login': '¿Ya tienes una cuenta?',
+    'login.toggle.register': '¿No tienes una cuenta?',
+    'login.toggle.link.login': 'Inicia Sesión',
+    'login.toggle.link.register': 'Regístrate',
+    'login.loading': 'Verificando sesión...',
+    'login.validation.username.required': 'El nombre de usuario es requerido',
+    'login.validation.username.min': 'El nombre de usuario debe tener al menos 3 caracteres',
+    'login.validation.password.required': 'La contraseña es requerida',
+    'login.validation.password.min': 'La contraseña debe tener al menos 6 caracteres',
+    // Auth Errors
+    'auth.error.invalid-credential': 'Credenciales incorrectas.',
+    'auth.error.user-not-found': 'No existe una cuenta con este usuario.',
+    'auth.error.wrong-password': 'La contraseña es incorrecta.',
+    'auth.error.email-already-in-use': 'Este nombre de usuario ya está registrado.',
+    'auth.error.invalid-email': 'El formato del usuario no es válido.',
+    'auth.error.weak-password': 'La contraseña debe tener al menos 6 caracteres.',
+    'auth.error.too-many-requests': 'Demasiados intentos fallidos. Inténtalo más tarde.',
+    'auth.error.network-request-failed': 'Error de conexión. Verifica tu internet.',
+    'auth.error.internal-error': 'Error interno del servidor. Inténtalo más tarde.',
+    'auth.error.operation-not-allowed': 'Operación no permitida.',
+    'auth.error.requires-recent-login': 'Por seguridad, inicia sesión nuevamente.',
+    'auth.error.user-not-found-db': 'Usuario no encontrado en la base de datos',
+    'auth.error.unexpected': 'Ocurrió un error inesperado. Inténtalo de nuevo.',
+    // Common
+    'common.error': 'Error',
+    'common.cancel': 'Cancelar',
+    'common.confirm': 'Confirmar',
+    'common.loading': 'Cargando...',
+    'common.today': 'Hoy',
+    'common.yesterday': 'Ayer',
+  },
+  en: {
+    // Home Screen
+    'home.title': 'My Finances',
+    'home.subtitle': 'finances',
+    'home.subtitle.singular': 'finance',
+    'home.no.finances': 'You have no finances',
+    'home.empty.title': "You don't have any accounts yet",
+    'home.empty.text': 'Create your first account or join a group to get started',
+    'home.empty.button': 'Create Account',
+    'home.loading': 'Loading accounts...',
+    'home.balance': 'Balance',
+    'home.type.individual': 'Individual',
+    'home.type.group': 'Group',
+    // Settings
+    'settings.title': 'Settings',
+    'settings.appearance': 'Appearance',
+    'settings.appearance.light': 'Light Mode',
+    'settings.appearance.dark': 'Dark Mode',
+    'settings.appearance.system': 'System',
+    'settings.language': 'Language',
+    'settings.language.es': 'Spanish',
+    'settings.language.en': 'English',
+    'settings.logout': 'Log Out',
+    'settings.logout.confirm': 'Are you sure you want to log out?',
+    'settings.logout.cancel': 'Cancel',
+    'settings.logout.confirm.button': 'Yes',
+    // Account Details
+    'account.back': 'Back',
+    'account.balance.total': 'Total Balance',
+    'account.type.personal': 'Personal Account',
+    'account.type.group': 'Joint Account',
+    'account.share.code.show': 'Show Join Code',
+    'account.share.code.hide': 'Hide Code',
+    'account.transactions': 'Transactions',
+    'account.transaction': 'transaction',
+    'account.transactions.plural': 'transactions',
+    'account.view.all': 'View All',
+    'account.empty.transactions': 'No transactions yet',
+    'account.delete': 'Delete Account',
+    'account.delete.confirm': 'Are you sure you want to delete this account?',
+    'account.delete.warning': 'FINAL WARNING',
+    'account.delete.warning.text': 'This action is irreversible. All transactions and data will be lost forever.',
+    'account.delete.cancel': 'Cancel',
+    'account.delete.confirm.button': 'DELETE PERMANENTLY',
+    'account.delete.continue': 'Continue',
+    // Transactions
+    'transactions.all': 'All Transactions',
+    'transactions.filter': 'Filter transactions',
+    'transactions.filter.title': 'Filter Transactions',
+    'transactions.filter.type': 'Type',
+    'transactions.filter.type.all': 'All',
+    'transactions.filter.type.income': 'Income',
+    'transactions.filter.type.expense': 'Expense',
+    'transactions.filter.category': 'Category',
+    'transactions.filter.amount': 'Amount',
+    'transactions.filter.amount.min': 'Minimum',
+    'transactions.filter.amount.max': 'Maximum',
+    'transactions.filter.user': 'User',
+    'transactions.filter.me': 'Me',
+    'transactions.filter.date.start': 'Start Date',
+    'transactions.filter.date.end': 'End Date',
+    'transactions.filter.apply': 'Apply Filters',
+    'transactions.filter.reset': 'Clear Filters',
+    'transactions.filter.cancel': 'Cancel',
+    'transactions.empty': 'No transactions',
+    'transactions.empty.filtered': 'Try changing the filters',
+    'transactions.empty.default': 'Transactions will appear here',
+    'transactions.loading': 'Loading transactions...',
+    'transactions.delete': 'Delete Transaction',
+    'transactions.delete.confirm': 'Are you sure you want to delete this transaction?',
+    'transactions.delete.cancel': 'Cancel',
+    'transactions.delete.delete': 'Delete',
+    // Transaction Add
+    'transaction.add.title': 'New Transaction',
+    'transaction.add.type': 'Transaction Type',
+    'transaction.add.type.income': 'Income',
+    'transaction.add.type.expense': 'Expense',
+    'transaction.add.amount': 'Amount',
+    'transaction.add.category': 'Category',
+    'transaction.add.note': 'Note (optional)',
+    'transaction.add.note.placeholder': 'Add a note...',
+    // Transaction Categories
+    'category.income.salary': 'Salary',
+    'category.income.rent': 'Rent',
+    'category.income.bonus': 'Bonus',
+    'category.income.sale': 'Sale',
+    'category.income.investment': 'Investment',
+    'category.income.other': 'Other Income',
+    'category.expense.food': 'Food',
+    'category.expense.transport': 'Transport',
+    'category.expense.entertainment': 'Entertainment',
+    'category.expense.health': 'Health',
+    'category.expense.education': 'Education',
+    'category.expense.other': 'Other Expenses',
+    'transaction.add.create': 'Add',
+    'transaction.add.create.income': 'Add Income',
+    'transaction.add.create.expense': 'Add Expense',
+    'transaction.add.cancel': 'Cancel',
+    'transaction.add.error': 'Error creating transaction. Please try again.',
+    // Account Create
+    'account.create.title': 'Create Finance',
+    'account.create.join': 'Join Group',
+    'account.create.or.create': 'Or create finance',
+    'account.create.name': 'Finance Name',
+    'account.create.type': 'Finance Type',
+    'account.create.type.individual': 'Personal',
+    'account.create.type.group': 'Joint',
+    'account.create.currency': 'Currency',
+    'account.create.join.code': 'Join Code',
+    'account.create.join.code.placeholder': 'Enter the code',
+    'account.create.create': 'Create Finance',
+    'account.create.join.button': 'Join',
+    'account.create.error': 'Error creating account. Please try again.',
+    // Login
+    'login.title': 'Sign In',
+    'login.register': 'Create Account',
+    'login.username': 'Username',
+    'login.password': 'Password',
+    'login.username.placeholder': 'Enter your username',
+    'login.password.placeholder': 'Enter your password',
+    'login.submit': 'Sign In',
+    'login.create': 'Create Account',
+    'login.subtitle.login': 'Enter your credentials to continue',
+    'login.subtitle.register': 'Create an account to get started',
+    'login.toggle.login': 'Already have an account?',
+    'login.toggle.register': "Don't have an account?",
+    'login.toggle.link.login': 'Sign In',
+    'login.toggle.link.register': 'Sign Up',
+    'login.loading': 'Verifying session...',
+    'login.validation.username.required': 'Username is required',
+    'login.validation.username.min': 'Username must be at least 3 characters',
+    'login.validation.password.required': 'Password is required',
+    'login.validation.password.min': 'Password must be at least 6 characters',
+    // Auth Errors
+    'auth.error.invalid-credential': 'Incorrect credentials.',
+    'auth.error.user-not-found': 'No account found with this username.',
+    'auth.error.wrong-password': 'The password is incorrect.',
+    'auth.error.email-already-in-use': 'This username is already registered.',
+    'auth.error.invalid-email': 'The username format is not valid.',
+    'auth.error.weak-password': 'Password must be at least 6 characters.',
+    'auth.error.too-many-requests': 'Too many failed attempts. Please try again later.',
+    'auth.error.network-request-failed': 'Connection error. Check your internet.',
+    'auth.error.internal-error': 'Internal server error. Please try again later.',
+    'auth.error.operation-not-allowed': 'Operation not allowed.',
+    'auth.error.requires-recent-login': 'For security, please log in again.',
+    'auth.error.user-not-found-db': 'User not found in database',
+    'auth.error.unexpected': 'An unexpected error occurred. Please try again.',
+    // Common
+    'common.error': 'Error',
+    'common.cancel': 'Cancel',
+    'common.confirm': 'Confirm',
+    'common.loading': 'Loading...',
+    'common.today': 'Today',
+    'common.yesterday': 'Yesterday',
+  },
+};
+
+export function LanguageProvider({ children }: { children: React.ReactNode }) {
+  const [language, setLanguageState] = useState<Language>('es');
+
+  // Cargar idioma guardado al iniciar
+  useEffect(() => {
+    const loadLanguage = async () => {
+      try {
+        const savedLanguage = await AsyncStorage.getItem(LANGUAGE_STORAGE_KEY);
+        if (savedLanguage === 'es' || savedLanguage === 'en') {
+          setLanguageState(savedLanguage);
+        }
+      } catch (error) {
+        console.error('Error cargando idioma:', error);
+      }
+    };
+    loadLanguage();
+  }, []);
+
+  const setLanguage = async (lang: Language) => {
+    try {
+      await AsyncStorage.setItem(LANGUAGE_STORAGE_KEY, lang);
+      setLanguageState(lang);
+    } catch (error) {
+      console.error('Error guardando idioma:', error);
+    }
+  };
+
+  const t = (key: string): string => {
+    return translations[language][key] || key;
+  };
+
+  return (
+    <LanguageContext.Provider value={{ language, setLanguage, t }}>
+      {children}
+    </LanguageContext.Provider>
+  );
+}
+
+export function useLanguage() {
+  const context = useContext(LanguageContext);
+  if (context === undefined) {
+    throw new Error('useLanguage must be used within a LanguageProvider');
+  }
+  return context;
+}
