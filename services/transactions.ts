@@ -58,6 +58,7 @@ export async function createTransaction(
       type: transactionData.type,
       amount: Math.abs(transactionData.amount), // Asegurar que siempre sea positivo
       category: transactionData.category.trim(),
+      paymentMethod: transactionData.paymentMethod || 'CARD', // Default a CARD si no se especifica
       date: transactionData.date || serverTimestamp(),
       createdAt: serverTimestamp() as any,
     };
@@ -117,6 +118,7 @@ export async function getAccountTransactions(
         type: data.type,
         amount: data.amount,
         category: data.category,
+        paymentMethod: data.paymentMethod || 'CARD', // Default a CARD para transacciones antiguas
         date: data.date,
         note: data.note || undefined,
         createdAt: data.createdAt,
@@ -183,6 +185,7 @@ export function subscribeToAccountTransactions(
           type: data.type,
           amount: data.amount,
           category: data.category,
+          paymentMethod: data.paymentMethod || 'CARD', // Default a CARD para transacciones antiguas
           date: data.date,
           note: data.note || undefined,
           createdAt: data.createdAt,

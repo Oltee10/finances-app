@@ -13,12 +13,29 @@ export default function Root({ children }: PropsWithChildren) {
         {/* 1. THEME COLOR (Status Bar) - Será actualizado dinámicamente desde _layout.tsx */}
         <meta name="theme-color" content="#ffffff" />
 
-        {/* 2. FORCE IOS ICON */}
+        {/* 2. ICON DEFINITIONS - PWA Standard */}
+        <link rel="icon" href="/icon-vfinal.png" />
         <link rel="apple-touch-icon" href="/icon-vfinal.png" />
+        <link rel="manifest" href="/manifest.json" />
 
-        {/* 3. BACKGROUND (Overscroll Area) - Será actualizado dinámicamente desde _layout.tsx */}
+        {/* 3. BACKGROUND & VIEWPORT FIXES - Será actualizado dinámicamente desde _layout.tsx */}
         <style dangerouslySetInnerHTML={{ __html: `
-          body { background-color: #ffffff; }
+          html, body {
+            height: 100dvh;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            overscroll-behavior: none;
+          }
+          #root {
+            height: 100dvh;
+            width: 100%;
+            overflow: hidden;
+          }
+          body {
+            background-color: #ffffff;
+          }
         `}} />
 
         <ScrollViewStyleReset />

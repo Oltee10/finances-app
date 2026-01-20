@@ -60,6 +60,7 @@ export default function TransactionsFilterScreen() {
   const [filterMaxAmount, setFilterMaxAmount] = useState<number | null>(null);
   const [filterStartDate, setFilterStartDate] = useState<Date | null>(null);
   const [filterEndDate, setFilterEndDate] = useState<Date | null>(null);
+  const [filterPaymentMethod, setFilterPaymentMethod] = useState<'ALL' | 'CASH' | 'CARD'>('ALL');
   const [showStartDatePicker, setShowStartDatePicker] = useState<boolean>(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState<boolean>(false);
 
@@ -79,6 +80,7 @@ export default function TransactionsFilterScreen() {
           setFilterMaxAmount(filters.filterMaxAmount ?? null);
           setFilterStartDate(filters.filterStartDate ? new Date(filters.filterStartDate) : null);
           setFilterEndDate(filters.filterEndDate ? new Date(filters.filterEndDate) : null);
+          setFilterPaymentMethod(filters.filterPaymentMethod || 'ALL');
         }
       } catch (error) {
         console.error('Error cargando filtros:', error);
@@ -213,6 +215,7 @@ export default function TransactionsFilterScreen() {
         filterMaxAmount,
         filterStartDate: filterStartDate?.toISOString() || null,
         filterEndDate: filterEndDate?.toISOString() || null,
+        filterPaymentMethod,
         sortOrder: 'newest', // Mantener el orden por defecto
       };
       await AsyncStorage.setItem(`filters_${accountId}`, JSON.stringify(filters));
@@ -234,6 +237,7 @@ export default function TransactionsFilterScreen() {
     setFilterMaxAmount(null);
     setFilterStartDate(null);
     setFilterEndDate(null);
+    setFilterPaymentMethod('ALL');
   };
 
   if (loading || !account) {
@@ -418,6 +422,67 @@ export default function TransactionsFilterScreen() {
                 </View>
               </View>
             )}
+
+            {/* Filtro por Método de Pago */}
+            <View style={styles.inputContainer}>
+              <ThemedText style={styles.label}>Método de Pago</ThemedText>
+              <View style={styles.typeSelector}>
+                <TouchableOpacity
+                  style={[
+                    styles.typeButton,
+                    filterPaymentMethod === 'ALL' && {
+                      backgroundColor: colors.tint,
+                    },
+                    { borderColor: colors.icon },
+                  ]}
+                  onPress={() => setFilterPaymentMethod('ALL')}
+                  activeOpacity={0.7}>
+                  <ThemedText
+                    style={[
+                      styles.typeButtonText,
+                      filterPaymentMethod === 'ALL' && [styles.typeButtonTextActive, { color: '#FFFFFF' }],
+                    ]}>
+                    {t('transactions.filter.type.all')}
+                  </ThemedText>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.typeButton,
+                    filterPaymentMethod === 'CASH' && {
+                      backgroundColor: colors.tint,
+                    },
+                    { borderColor: colors.icon },
+                  ]}
+                  onPress={() => setFilterPaymentMethod('CASH')}
+                  activeOpacity={0.7}>
+                  <ThemedText
+                    style={[
+                      styles.typeButtonText,
+                      filterPaymentMethod === 'CASH' && [styles.typeButtonTextActive, { color: '#FFFFFF' }],
+                    ]}>
+                    💵 Efectivo
+                  </ThemedText>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.typeButton,
+                    filterPaymentMethod === 'CARD' && {
+                      backgroundColor: colors.tint,
+                    },
+                    { borderColor: colors.icon },
+                  ]}
+                  onPress={() => setFilterPaymentMethod('CARD')}
+                  activeOpacity={0.7}>
+                  <ThemedText
+                    style={[
+                      styles.typeButtonText,
+                      filterPaymentMethod === 'CARD' && [styles.typeButtonTextActive, { color: '#FFFFFF' }],
+                    ]}>
+                    💳 Tarjeta
+                  </ThemedText>
+                </TouchableOpacity>
+              </View>
+            </View>
 
             {/* Filtro por Monto */}
             <View style={styles.inputContainer}>

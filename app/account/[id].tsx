@@ -442,6 +442,7 @@ export default function AccountDetailsScreen() {
     const formattedAmount = formatTransactionAmount(item.amount, account?.currency || 'USD');
     const displayAmount = isIncome ? `+${formattedAmount}` : `-${formattedAmount}`;
     const iconName = isIncome ? 'arrow-upward' : 'arrow-downward';
+    const paymentMethodIcon = item.paymentMethod === 'CASH' ? '💵' : '💳';
 
     return (
       <View style={[styles.transactionItem, { 
@@ -462,6 +463,9 @@ export default function AccountDetailsScreen() {
               </View>
               <ThemedText type="defaultSemiBold" style={styles.transactionCategory}>
                 {item.category}
+              </ThemedText>
+              <ThemedText style={styles.paymentMethodIcon}>
+                {paymentMethodIcon}
               </ThemedText>
             </View>
             {item.note && (
@@ -1463,6 +1467,10 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '600',
     flex: 1,
+  },
+  paymentMethodIcon: {
+    fontSize: 18,
+    marginLeft: 6,
   },
   transactionNote: {
     fontSize: 13,

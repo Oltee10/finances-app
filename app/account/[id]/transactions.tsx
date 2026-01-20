@@ -68,6 +68,7 @@ export default function AllTransactionsScreen() {
   const [filterMaxAmount, setFilterMaxAmount] = useState<number | null>(null);
   const [filterStartDate, setFilterStartDate] = useState<Date | null>(null);
   const [filterEndDate, setFilterEndDate] = useState<Date | null>(null);
+  const [filterPaymentMethod, setFilterPaymentMethod] = useState<'ALL' | 'CASH' | 'CARD' | null>('ALL');
   const [sortOrder, setSortOrder] = useState<'newest' | 'oldest' | 'highest' | 'lowest'>('newest');
 
   /**
@@ -144,6 +145,7 @@ export default function AllTransactionsScreen() {
             setFilterMaxAmount(filters.filterMaxAmount ?? null);
             setFilterStartDate(filters.filterStartDate ? new Date(filters.filterStartDate) : null);
             setFilterEndDate(filters.filterEndDate ? new Date(filters.filterEndDate) : null);
+            setFilterPaymentMethod(filters.filterPaymentMethod || 'ALL');
             setSortOrder(filters.sortOrder || 'newest');
           }
         } catch (error) {
@@ -210,6 +212,11 @@ export default function AllTransactionsScreen() {
       });
     }
 
+    // Filtrar por método de pago
+    if (filterPaymentMethod !== null && filterPaymentMethod !== 'ALL') {
+      filtered = filtered.filter((t) => t.paymentMethod === filterPaymentMethod);
+    }
+
     // Ordenar (por defecto: más recientes primero)
     filtered.sort((a, b) => {
       switch (sortOrder) {
@@ -235,7 +242,7 @@ export default function AllTransactionsScreen() {
     });
 
     return filtered;
-  }, [transactions, filterType, filterCategory, filterUserId, filterMinAmount, filterMaxAmount, filterStartDate, filterEndDate, sortOrder, account?.type]);
+  }, [transactions, filterType, filterCategory, filterUserId, filterMinAmount, filterMaxAmount, filterStartDate, filterEndDate, filterPaymentMethod, sortOrder, account?.type]);
 
   /**
    * Formatea el monto de transacción usando Intl.NumberFormat
@@ -323,6 +330,7 @@ export default function AllTransactionsScreen() {
     const formattedAmount = formatTransactionAmount(item.amount, account?.currency || 'USD');
     const displayAmount = isIncome ? `+${formattedAmount}` : `-${formattedAmount}`;
     const iconName = isIncome ? 'arrow-upward' : 'arrow-downward';
+    const paymentMethodIcon = item.paymentMethod === 'CASH' ? '💵' : '💳';
 
     return (
       <View style={[styles.transactionItem, { 
@@ -343,6 +351,9 @@ export default function AllTransactionsScreen() {
               </View>
               <ThemedText type="defaultSemiBold" style={styles.transactionCategory}>
                 {item.category}
+              </ThemedText>
+              <ThemedText style={styles.paymentMethodIcon}>
+                {paymentMethodIcon}
               </ThemedText>
             </View>
             {item.note && (
@@ -409,6 +420,7 @@ export default function AllTransactionsScreen() {
     setFilterUserId('ALL');
     setFilterMinAmount(null);
     setFilterMaxAmount(null);
+    setFilterPaymentMethod('ALL');
     setSortOrder('newest');
   };
 
@@ -421,6 +433,7 @@ export default function AllTransactionsScreen() {
     filterUserId !== 'ALL' ||
     filterMinAmount !== null ||
     filterMaxAmount !== null ||
+    filterPaymentMethod !== 'ALL' ||
     sortOrder !== 'newest';
 
   /**
@@ -798,6 +811,10 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '600',
     flex: 1,
+  },
+  paymentMethodIcon: {
+    fontSize: 18,
+    marginLeft: 6,
   },
   transactionNote: {
     fontSize: 13,

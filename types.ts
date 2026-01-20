@@ -19,6 +19,11 @@ export type Currency = 'EUR' | 'USD' | 'COP';
 export type TransactionType = 'INCOME' | 'EXPENSE';
 
 /**
+ * Método de pago
+ */
+export type PaymentMethod = 'CASH' | 'CARD';
+
+/**
  * Usuario
  * Colección: users
  */
@@ -80,6 +85,8 @@ export interface Transaction {
   amount: number;
   /** Categoría de la transacción (ej: "Comida", "Transporte", "Salario") */
   category: string;
+  /** Método de pago: Efectivo o Tarjeta */
+  paymentMethod: PaymentMethod;
   /** Fecha de la transacción (timestamp de Firestore) */
   date: FirebaseFirestore.Timestamp;
   /** Nota opcional sobre la transacción */
@@ -104,4 +111,26 @@ export type CreateTransactionInput = Omit<Transaction, 'id' | 'createdAt'>;
 export interface AccountWithBalance extends Account {
   /** Balance calculado sumando todas las transacciones */
   balance: number;
+}
+
+/**
+ * Filtros para transacciones
+ */
+export interface TransactionFilter {
+  /** Filtrar por tipo de transacción */
+  type?: 'ALL' | 'INCOME' | 'EXPENSE' | null;
+  /** Filtrar por categoría */
+  category?: string | null;
+  /** Filtrar por usuario (solo para cuentas GROUP) */
+  userId?: string | null;
+  /** Filtrar por monto mínimo */
+  minAmount?: number | null;
+  /** Filtrar por monto máximo */
+  maxAmount?: number | null;
+  /** Filtrar por fecha inicio */
+  startDate?: Date | null;
+  /** Filtrar por fecha fin */
+  endDate?: Date | null;
+  /** Filtrar por método de pago */
+  paymentMethod?: PaymentMethod | null;
 }

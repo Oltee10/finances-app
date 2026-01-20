@@ -15,7 +15,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { createTransaction } from '@/services/transactions';
-import type { Currency, TransactionType } from '@/types';
+import type { Currency, TransactionType, PaymentMethod } from '@/types';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { doc, getDoc, serverTimestamp } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
@@ -52,6 +52,7 @@ export default function TransactionAddScreen() {
   const [amountRaw, setAmountRaw] = useState<number>(0); // Valor numérico real para la BD
   const [category, setCategory] = useState<string>('');
   const [note, setNote] = useState<string>('');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('CARD');
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [currency, setCurrency] = useState<Currency>('USD');
@@ -164,6 +165,7 @@ export default function TransactionAddScreen() {
     setAmountRaw(0);
     setCategory('');
     setNote('');
+    setPaymentMethod('CARD');
     setError(null);
   };
 
@@ -214,6 +216,7 @@ export default function TransactionAddScreen() {
           type: transactionType,
           amount: amountRaw,
           category: category.trim(),
+          paymentMethod,
           note: note.trim() || undefined,
           date: serverTimestamp(),
         },
@@ -324,6 +327,55 @@ export default function TransactionAddScreen() {
                 keyboardType={currency === 'COP' ? 'number-pad' : 'decimal-pad'}
                 editable={!loading}
               />
+            </View>
+
+            {/* Selector de Método de Pago */}
+            <View style={styles.inputContainer}>
+              <ThemedText style={styles.label}>Método de Pago</ThemedText>
+              <View style={styles.typeSelector}>
+                <TouchableOpacity
+                  style={[
+                    styles.typeButton,
+                    paymentMethod === 'CASH' && {
+                      backgroundColor: colors.tint,
+                    },
+                    { borderColor: colors.icon },
+                  ]}
+                  onPress={() => {
+                    setPaymentMethod('CASH');
+                    setError(null);
+                  }}
+                  disabled={loading}>
+                  <ThemedText
+                    style={[
+                      styles.typeButtonText,
+                      paymentMethod === 'CASH' && [styles.typeButtonTextActive, { color: '#FFFFFF' }],
+                    ]}>
+                    💵 Efectivo
+                  </ThemedText>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.typeButton,
+                    paymentMethod === 'CARD' && {
+                      backgroundColor: colors.tint,
+                    },
+                    { borderColor: colors.icon },
+                  ]}
+                  onPress={() => {
+                    setPaymentMethod('CARD');
+                    setError(null);
+                  }}
+                  disabled={loading}>
+                  <ThemedText
+                    style={[
+                      styles.typeButtonText,
+                      paymentMethod === 'CARD' && [styles.typeButtonTextActive, { color: '#FFFFFF' }],
+                    ]}>
+                    💳 Tarjeta
+                  </ThemedText>
+                </TouchableOpacity>
+              </View>
             </View>
 
             {/* Selector de Categoría */}
