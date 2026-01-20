@@ -13,6 +13,7 @@ import { db } from '@/config/firebase';
 import type { Account, AccountWithBalance, CreateAccountInput } from '@/types';
 import {
   addDoc,
+  arrayUnion,
   collection,
   doc,
   getDoc,
@@ -319,15 +320,15 @@ export async function createAccount(
 }
 
 /**
- * Busca una cuenta por su joinCode
+ * Busca una cuenta por su inviteCode
  * 
- * @param joinCode - El código de unión a buscar
+ * @param inviteCode - El código de invitación a buscar
  * @returns La cuenta encontrada o null si no existe
  */
-export async function findAccountByJoinCode(joinCode: string): Promise<Account | null> {
+export async function findAccountByJoinCode(inviteCode: string): Promise<Account | null> {
   try {
     const accountsRef = collection(db, 'accounts');
-    const q = query(accountsRef, where('joinCode', '==', joinCode));
+    const q = query(accountsRef, where('inviteCode', '==', inviteCode));
     const querySnapshot = await getDocs(q);
 
     if (querySnapshot.empty) {
@@ -356,7 +357,7 @@ export async function findAccountByJoinCode(joinCode: string): Promise<Account |
 }
 
 /**
- * Agrega un usuario a la lista de miembros de una cuenta
+ * Agrega un usuario a la lista de miembros de una cuenta usando arrayUnion
  * 
  * @param accountId - ID de la cuenta
  * @param userId - ID del usuario a agregar
@@ -371,21 +372,10 @@ export async function joinAccount(accountId: string, userId: string): Promise<Ac
       throw new Error('Cuenta no encontrada');
     }
 
-    const accountData = accountDoc.data();
-    const memberIds = accountData.memberIds || accountData.members || [];
-
-    // Verificar que el usuario no sea ya miembro
-    if (memberIds.includes(userId)) {
-      throw new Error('El usuario ya es miembro de esta cuenta');
-    }
-
-    // Agregar el usuario a memberIds
-    const updatedMemberIds = [...memberIds, userId];
-
-    // Actualizar el documento
+    // Usar arrayUnion para agregar el usuario a memberIds
+    // arrayUnion evita duplicados automáticamente
     await updateDoc(accountRef, {
-      // Mantener el campo alineado con las reglas (solo memberIds)
-      memberIds: updatedMemberIds,
+      memberIds: arrayUnion(userId),
       updatedAt: serverTimestamp(),
     });
 
@@ -402,27 +392,43 @@ export async function joinAccount(accountId: string, userId: string): Promise<Ac
 }
 
 /**
- * Une un usuario a una cuenta usando un joinCode
+ * Une un usuario a una cuenta usando un inviteCode
  * 
- * @param joinCode - El código de unión
+ * @param inviteCode - El código de invitación
  * @param userId - ID del usuario que se quiere unir
  * @returns La cuenta a la que se unió el usuario
  */
-export async function joinAccountByCode(joinCode: string, userId: string): Promise<Account> {
+export async function joinAccountByCode(inviteCode: string, userId: string): Promise<Account> {
   try {
-    // Buscar la cuenta por joinCode
-    const account = await findAccountByJoinCode(joinCode);
+    // Buscar la cuenta por inviteCode
+    const accountsRef = collection(db, 'accounts');
+    const q = query(accountsRef, where('inviteCode', '==', inviteCode));
+    const querySnapshot = await getDocs(q);
 
-    if (!account) {
-      throw new Error('Código de unión no válido');
+    if (querySnapshot.empty) {
+      throw new Error('Código de invitación no válido');
     }
 
-    if (account.type !== 'GROUP') {
+    const accountDoc = querySnapshot.docs[0];
+    const accountData = accountDoc.data();
+
+    // Verificar que sea una cuenta de grupo
+    if (accountData.type !== 'GROUP') {
       throw new Error('Este código no pertenece a una cuenta de grupo');
     }
 
-    // Unir al usuario a la cuenta
-    return await joinAccount(account.id, userId);
+    // Usar arrayUnion para agregar el usuario a memberIds
+    await updateDoc(accountDoc.ref, {
+      memberIds: arrayUnion(userId),
+      updatedAt: serverTimestamp(),
+    });
+
+    // Retornar la cuenta actualizada
+    const updatedAccountData = await getDoc(accountDoc.ref);
+    return {
+      id: updatedAccountData.id,
+      ...updatedAccountData.data(),
+    } as Account;
   } catch (error) {
     console.error('Error uniéndose a cuenta por código:', error);
     throw error;
