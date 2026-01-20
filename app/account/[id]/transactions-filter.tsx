@@ -705,6 +705,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
+    paddingBottom: 120,
   },
   content: {
     flex: 1,

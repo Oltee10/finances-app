@@ -277,6 +277,16 @@ export default function HomeScreen() {
           ]}
           style={{ backgroundColor: colors.background }}
           ListEmptyComponent={renderEmptyState}
+          ListHeaderComponent={
+            accounts.length > 0 ? (
+              <TouchableOpacity
+                style={[styles.addButton, { backgroundColor: colors.tint }]}
+                onPress={navigateToCreateAccount}
+                activeOpacity={0.8}>
+                <Text style={[styles.addButtonText, { color: '#FFFFFF' }]}>+ Agregar finanza</Text>
+              </TouchableOpacity>
+            ) : null
+          }
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -289,16 +299,6 @@ export default function HomeScreen() {
           scrollEnabled={true}
           removeClippedSubviews={false}
         />
-
-        {/* FAB (Floating Action Button) */}
-        {accounts.length > 0 && (
-          <TouchableOpacity
-            style={[styles.fab, { backgroundColor: colors.tint }]}
-            onPress={navigateToCreateAccount}
-            activeOpacity={0.8}>
-            <Text style={[styles.fabText, { color: '#FFFFFF' }]}>+</Text>
-          </TouchableOpacity>
-        )}
 
         {/* Modal de Configuración */}
         <Modal
@@ -534,7 +534,7 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingHorizontal: 24,
-    paddingBottom: 100,
+    paddingBottom: 24,
     gap: 20,
     // backgroundColor handled inline
   },
@@ -663,34 +663,33 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
   },
-  fab: {
-    position: 'absolute',
-    bottom: 32,
-    right: 24,
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+  addButton: {
+    width: '100%',
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
+    marginBottom: 20,
     ...Platform.select({
       ios: {
         // shadowColor handled via theme
-        shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.3,
-        shadowRadius: 12,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
       },
       android: {
-        elevation: 10,
+        elevation: 2,
       },
       web: {
-        boxShadow: '0 6px 12px rgba(0, 0, 0, 0.3)',
+        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
       },
     }),
   },
-  fabText: {
-    fontSize: 36,
-    fontWeight: '300',
-    lineHeight: 36,
+  addButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    letterSpacing: 0.3,
   },
   // Modal Styles
   modalOverlay: {

@@ -481,7 +481,7 @@ export default function AllTransactionsScreen() {
             style={[styles.settingsButton, { backgroundColor: colors.background + '20' }]}
             onPress={() => setShowSettingsModal(true)}
             activeOpacity={0.7}>
-            <MaterialIcons name="settings" size={24} color={colors.tint} />
+            <MaterialIcons name="settings" size={22} color={colors.tint} />
           </TouchableOpacity>
         </View>
         <ThemedText type="title" style={styles.title}>
@@ -715,14 +715,14 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: 24,
     paddingTop: 20,
-    paddingBottom: 16,
-    gap: 8,
+    paddingBottom: 24,
+    gap: 16,
   },
   headerTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 24,
   },
   backButton: {
     flexDirection: 'row',
@@ -948,10 +948,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   settingsButton: {
-    padding: 10,
-    borderRadius: 12,
+    padding: 8,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
+    minWidth: 40,
+    minHeight: 40,
   },
   // Modal Styles
   modalOverlay: {

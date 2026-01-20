@@ -677,6 +677,16 @@ export default function AccountDetailsScreen() {
           showsVerticalScrollIndicator={false}>
           {renderListHeader()}
           
+          {/* Botón Agregar Transacción */}
+          <View style={styles.addTransactionButtonContainer}>
+            <TouchableOpacity
+              style={[styles.addTransactionButton, { backgroundColor: colors.tint }]}
+              onPress={navigateToAddTransaction}
+              activeOpacity={0.8}>
+              <Text style={[styles.addTransactionButtonText, { color: '#FFFFFF' }]}>+ Agregar transacción</Text>
+            </TouchableOpacity>
+          </View>
+          
           {/* Transactions Section */}
           <View style={styles.transactionsContainer}>
             <View style={styles.transactionsHeader}>
@@ -1080,14 +1090,6 @@ export default function AccountDetailsScreen() {
         </View>
       </Modal>
 
-      {/* FAB para agregar transacción */}
-      <TouchableOpacity
-        style={[styles.fab, styles.fabPrimary, { backgroundColor: colors.tint }]}
-        onPress={navigateToAddTransaction}
-        activeOpacity={0.8}>
-        <Text style={[styles.fabText, { color: "#FFFFFF" }]}>+</Text>
-      </TouchableOpacity>
-
       {/* Modal de Confirmación de Eliminación (Primera) */}
       <ConfirmModal
         visible={showDeleteConfirmModal}
@@ -1379,7 +1381,39 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 120,
+    paddingBottom: 24,
+  },
+  addTransactionButtonContainer: {
+    paddingHorizontal: 24,
+    marginTop: 24,
+    marginBottom: 8,
+  },
+  addTransactionButton: {
+    width: '100%',
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...Platform.select({
+      ios: {
+        // shadowColor handled via theme
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 2,
+      },
+      web: {
+        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+      },
+    }),
+  },
+  addTransactionButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    letterSpacing: 0.3,
   },
   transactionsContainer: {
     marginTop: 8,
@@ -1494,51 +1528,6 @@ const styles = StyleSheet.create({
   },
   transactionSeparator: {
     height: 12,
-  },
-  fab: {
-    position: 'absolute',
-    bottom: 32,
-    right: 24,
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    justifyContent: 'center',
-    alignItems: 'center',
-    ...Platform.select({
-      ios: {
-        // shadowColor handled via theme
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 8,
-      },
-    }),
-    alignItems: 'center',
-    zIndex: 1000,
-    ...Platform.select({
-      ios: {
-        // shadowColor handled via theme
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 8,
-      },
-      web: {
-        boxShadow: '0 4px 8px rgba(0, 0, 0, 0.3)',
-      },
-    }),
-  },
-  fabPrimary: {
-    // backgroundColor handled inline
-  },
-  fabText: {
-    fontSize: 32,
-    fontWeight: '300',
-    lineHeight: 32,
   },
   // Modal de filtros
   modalOverlay: {
