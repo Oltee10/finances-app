@@ -10,19 +10,15 @@ export default function Root({ children }: PropsWithChildren) {
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no, viewport-fit=cover" />
 
-        {/* 1. DYNAMIC THEME COLOR (Status Bar) */}
-        <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff" />
-        <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#000000" />
+        {/* 1. THEME COLOR (Status Bar) - Será actualizado dinámicamente desde _layout.tsx */}
+        <meta name="theme-color" content="#ffffff" />
 
         {/* 2. FORCE IOS ICON */}
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 
-        {/* 3. DYNAMIC BACKGROUND (Overscroll Area) */}
+        {/* 3. BACKGROUND (Overscroll Area) - Será actualizado dinámicamente desde _layout.tsx */}
         <style dangerouslySetInnerHTML={{ __html: `
           body { background-color: #ffffff; }
-          @media (prefers-color-scheme: dark) {
-            body { background-color: #000000; }
-          }
         `}} />
 
         <ScrollViewStyleReset />

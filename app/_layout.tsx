@@ -24,6 +24,21 @@ function RootLayoutNav() {
   const segments = useSegments();
   const router = useRouter();
 
+  // Sincronizar tema de la app con el browser shell (PWA background y status bar)
+  useEffect(() => {
+    if (Platform.OS === 'web') {
+      // 1. Cambiar el fondo del body (overscroll area)
+      document.body.style.backgroundColor = theme === 'dark' ? '#000000' : '#ffffff';
+
+      // 2. Cambiar el color de la barra de estado de la PWA
+      // Buscar todos los meta tags theme-color y actualizarlos
+      const metaTags = document.querySelectorAll('meta[name="theme-color"]');
+      metaTags.forEach((meta) => {
+        meta.setAttribute('content', theme === 'dark' ? '#000000' : '#ffffff');
+      });
+    }
+  }, [theme]);
+
   useEffect(() => {
     if (loading) return;
 
