@@ -86,7 +86,6 @@ function RootLayoutNav() {
   
   return (
     <ThemeProvider value={navigationTheme}>
-      {/* Meta tags para PWA Standalone Mode en iOS */}
       {Platform.OS === 'web' ? (
         <WebContainer>
           {stackContent}

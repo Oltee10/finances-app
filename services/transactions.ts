@@ -25,6 +25,7 @@ import {
   addDoc,
   deleteDoc,
   doc,
+  updateDoc,
   serverTimestamp,
   onSnapshot,
   type QuerySnapshot,
@@ -69,6 +70,10 @@ export async function createTransaction(
 
     // Agregar documento a Firestore
     const docRef = await addDoc(transactionsRef, newTransaction);
+
+    // Actualizar el documento padre de la cuenta para disparar el listener
+    const accountRef = doc(db, 'accounts', transactionData.accountId);
+    await updateDoc(accountRef, { updatedAt: serverTimestamp() });
 
     // Retornar la transacción creada
     return {
@@ -225,6 +230,10 @@ export async function deleteTransaction(
     // Usar subcolección: accounts/{accountId}/transactions/{transactionId}
     const transactionRef = doc(db, 'accounts', accountId, 'transactions', transactionId);
     await deleteDoc(transactionRef);
+
+    // Actualizar el documento padre de la cuenta para disparar el listener
+    const accountRef = doc(db, 'accounts', accountId);
+    await updateDoc(accountRef, { updatedAt: serverTimestamp() });
   } catch (error) {
     console.error('Error eliminando transacción:', error);
     throw error;
