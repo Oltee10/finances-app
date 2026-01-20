@@ -44,6 +44,10 @@ export default function Root({ children }: PropsWithChildren) {
               width: 100vw;
               overflow: hidden;
               z-index: 0;
+              /* GLOBAL SAFETY CUSHION */
+              box-sizing: border-box;
+              /* Use safe area + 20px buffer for bottom toolbar clearance */
+              padding-bottom: calc(env(safe-area-inset-bottom) + 20px); 
             }
           `}} />
 
