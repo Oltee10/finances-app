@@ -18,32 +18,34 @@ export default function Root({ children }: PropsWithChildren) {
         <link rel="apple-touch-icon" href="/finances/icon.jpg?v=fixed" />
         <link rel="manifest" href="/finances/manifest.json" />
 
-        {/* 3. BACKGROUND & VIEWPORT FIXES - Position Fixed Strategy for Mobile */}
+        {/* 3. BACKGROUND & VIEWPORT FIXES - 100dvh Flex Strategy for Mobile */}
         <style dangerouslySetInnerHTML={{ __html: `
-          html, body {
-            height: 100%;
-            width: 100%;
-            overflow: hidden;
-            margin: 0;
-            padding: 0;
-            background-color: #000000;
-            overscroll-behavior: none;
-          }
-          #root {
-            display: flex;
-            flex-direction: column;
-            /* Pin to edges to prevent iOS Safari resizing issues */
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            height: 100dvh;
-            width: 100vw;
-            overflow: hidden;
-            z-index: 0;
-          }
-        `}} />
+            html {
+              height: 100%;
+              width: 100%;
+              overflow: hidden; /* Prevent scroll on HTML/Body */
+              -webkit-text-size-adjust: 100%;
+            }
+            body {
+              height: 100%;
+              width: 100%;
+              overflow: hidden;
+              margin: 0;
+              padding: 0;
+              /* background-color is REMOVED here so React logic controls it */
+              overscroll-behavior: none;
+              -webkit-font-smoothing: antialiased;
+            }
+            #root {
+              display: flex;
+              flex-direction: column;
+              flex: 1;
+              height: 100dvh; /* Critical: Use dynamic viewport height */
+              width: 100vw;
+              overflow: hidden;
+              z-index: 0;
+            }
+          `}} />
 
         <ScrollViewStyleReset />
       </head>
