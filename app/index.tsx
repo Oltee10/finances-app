@@ -15,7 +15,7 @@ import { Colors } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useTheme } from '@/contexts/ThemeContext';
-import { getUserAccounts } from '@/services/accounts';
+import { subscribeToUserAccounts } from '@/services/accounts';
 import type { AccountWithBalance } from '@/types';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -47,41 +47,39 @@ export default function HomeScreen() {
   const [showSettingsModal, setShowSettingsModal] = useState<boolean>(false);
 
   /**
-   * Carga las cuentas del usuario
+   * Suscripción en tiempo real a las cuentas del usuario
    */
-  const loadAccounts = useCallback(async () => {
+  useEffect(() => {
     if (!user) {
       setAccounts([]);
       setLoading(false);
       return;
     }
 
-    try {
-      const userAccounts = await getUserAccounts(user.id);
+    setLoading(true);
+
+    const unsubscribe = subscribeToUserAccounts(user.id, (userAccounts) => {
       setAccounts(userAccounts);
-    } catch (error) {
-      console.error('Error cargando cuentas:', error);
-    } finally {
       setLoading(false);
       setRefreshing(false);
-    }
-  }, [user]);
+    });
 
-  /**
-   * Efecto para cargar cuentas al montar y cuando cambia el usuario
-   */
-  useEffect(() => {
-    setLoading(true);
-    loadAccounts();
-  }, [loadAccounts]);
+    return () => {
+      unsubscribe();
+    };
+  }, [user]);
 
   /**
    * Maneja el pull to refresh
    */
   const handleRefresh = useCallback(() => {
+    // No necesitamos recargar manualmente porque usamos onSnapshot,
+    // pero mantenemos el gesto para feedback visual.
     setRefreshing(true);
-    loadAccounts();
-  }, [loadAccounts]);
+    setTimeout(() => {
+      setRefreshing(false);
+    }, 500);
+  }, []);
 
   /**
    * Formatea el balance con símbolo de moneda usando Intl.NumberFormat

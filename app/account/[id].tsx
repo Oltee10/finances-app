@@ -353,12 +353,28 @@ export default function AccountDetailsScreen() {
 
   /**
    * Elimina la cuenta y todas sus transacciones (eliminación en cascada)
-   * Con doble confirmación
+   * Con confirmación específica por plataforma
    */
   const handleDeleteAccount = async (): Promise<void> => {
     if (!accountId || !account) return;
 
-    // Primera confirmación
+    if (Platform.OS === 'web') {
+      // Web: usar window.confirm
+      if (typeof window === 'undefined') return;
+
+      const first = window.confirm(t('account.delete.confirm'));
+      if (!first) return;
+
+      const second = window.confirm(
+        `${t('account.delete.warning')}\n\n${t('account.delete.warning.text')}`
+      );
+      if (!second) return;
+
+      await performAccountDeletion();
+      return;
+    }
+
+    // Nativo: usar Alert.alert con doble confirmación
     Alert.alert(
       t('account.delete'),
       t('account.delete.confirm'),
@@ -370,7 +386,6 @@ export default function AccountDetailsScreen() {
         {
           text: t('account.delete.continue'),
           onPress: () => {
-            // Segunda confirmación (FINAL WARNING)
             Alert.alert(
               t('account.delete.warning'),
               t('account.delete.warning.text'),
@@ -429,11 +444,21 @@ export default function AccountDetailsScreen() {
       router.replace('/');
     } catch (error: any) {
       console.error('Error eliminando cuenta:', error);
-      Alert.alert(
-        'Error',
-        error.message || 'No se pudo eliminar la cuenta. Intenta de nuevo.',
-        [{ text: 'OK' }]
-      );
+
+      if (error?.code === 'auth/requires-recent-login') {
+        Alert.alert(
+          'Sesión expirada',
+          'Por seguridad, vuelve a iniciar sesión y luego intenta eliminar la cuenta de nuevo.',
+          [{ text: 'OK' }]
+        );
+      } else {
+        Alert.alert(
+          'Error',
+          error?.message || 'No se pudo eliminar la cuenta. Intenta de nuevo.',
+          [{ text: 'OK' }]
+        );
+      }
+
       setDeleting(false);
     }
   };

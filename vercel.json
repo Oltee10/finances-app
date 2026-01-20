@@ -1,0 +1,12 @@
+{
+  "rewrites": [
+    {
+      "source": "/finances",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/finances/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}

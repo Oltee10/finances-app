@@ -19,6 +19,7 @@ import {
   getDoc,
   updateDoc,
   serverTimestamp,
+  onSnapshot,
   type QuerySnapshot,
   type DocumentData,
 } from 'firebase/firestore';
@@ -159,6 +160,72 @@ export async function getUserAccounts(userId: string): Promise<AccountWithBalanc
   } catch (error) {
     console.error('Error obteniendo cuentas del usuario:', error);
     throw error;
+  }
+}
+
+/**
+ * Suscribe en tiempo real a todas las cuentas donde el usuario es miembro.
+ * Devuelve una función para desuscribirse.
+ *
+ * NOTA: La consulta de cuentas es en tiempo real con onSnapshot.
+ * El cálculo de balances sigue usando lecturas puntuales de transacciones.
+ */
+export function subscribeToUserAccounts(
+  userId: string,
+  callback: (accounts: AccountWithBalance[]) => void
+): () => void {
+  try {
+    const accountsRef = collection(db, 'accounts');
+    const q = query(accountsRef, where('memberIds', 'array-contains', userId));
+
+    const unsubscribe = onSnapshot(
+      q,
+      async (querySnapshot: QuerySnapshot<DocumentData>) => {
+        try {
+          const accountPromises = querySnapshot.docs.map(async (docSnapshot) => {
+            const accountData = docSnapshot.data();
+            const account: Account = {
+              id: docSnapshot.id,
+              name: accountData.name,
+              type: accountData.type,
+              currency: accountData.currency,
+              ownerId: accountData.ownerId,
+              memberIds: accountData.memberIds,
+              joinCode: accountData.joinCode || undefined,
+              createdAt: accountData.createdAt,
+              updatedAt: accountData.updatedAt,
+            } as Account;
+
+            const balance = await calculateAccountBalance(docSnapshot.id);
+
+            return {
+              ...account,
+              balance,
+            } as AccountWithBalance;
+          });
+
+          const accountsWithBalances = await Promise.all(accountPromises);
+
+          const sorted = accountsWithBalances.sort((a, b) => {
+            const aTime = a.createdAt?.toMillis() || 0;
+            const bTime = b.createdAt?.toMillis() || 0;
+            return bTime - aTime;
+          });
+
+          callback(sorted);
+        } catch (error) {
+          console.error('Error procesando snapshot de cuentas:', error);
+        }
+      },
+      (error) => {
+        console.error('Error en listener de cuentas del usuario:', error);
+      }
+    );
+
+    return unsubscribe;
+  } catch (error) {
+    console.error('Error inicializando listener de cuentas del usuario:', error);
+    return () => {};
   }
 }
 
