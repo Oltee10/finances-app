@@ -9,22 +9,22 @@
  * - Generar joinCode único para cuentas de grupo
  */
 
+import { db } from '@/config/firebase';
+import type { Account, AccountWithBalance, CreateAccountInput } from '@/types';
 import {
-  collection,
-  query,
-  where,
-  getDocs,
   addDoc,
+  collection,
   doc,
   getDoc,
-  updateDoc,
-  serverTimestamp,
+  getDocs,
   onSnapshot,
-  type QuerySnapshot,
+  query,
+  serverTimestamp,
+  updateDoc,
+  where,
   type DocumentData,
+  type QuerySnapshot,
 } from 'firebase/firestore';
-import { db } from '@/config/firebase';
-import type { Account, AccountWithBalance, CreateAccountInput, Currency, AccountType } from '@/types';
 
 /**
  * Genera un código de unión aleatorio de 6 caracteres alfanuméricos
@@ -120,6 +120,8 @@ export async function calculateAccountBalance(accountId: string): Promise<number
 export async function getUserAccounts(userId: string): Promise<AccountWithBalance[]> {
   try {
     const accountsRef = collection(db, 'accounts');
+    // La consulta debe alinear con las reglas de seguridad:
+    // allow read: if request.auth.uid in resource.data.memberIds;
     const q = query(accountsRef, where('memberIds', 'array-contains', userId));
     const querySnapshot = await getDocs(q);
 
@@ -128,13 +130,14 @@ export async function getUserAccounts(userId: string): Promise<AccountWithBalanc
     // Obtener cuentas y calcular balances en paralelo
     const accountPromises = querySnapshot.docs.map(async (docSnapshot) => {
       const accountData = docSnapshot.data();
+      const memberIds = accountData.memberIds || accountData.members || [];
       const account: Account = {
         id: docSnapshot.id,
         name: accountData.name,
         type: accountData.type,
         currency: accountData.currency,
         ownerId: accountData.ownerId,
-        memberIds: accountData.memberIds,
+        memberIds,
         joinCode: accountData.joinCode || undefined,
         createdAt: accountData.createdAt,
         updatedAt: accountData.updatedAt,
@@ -176,6 +179,7 @@ export function subscribeToUserAccounts(
 ): () => void {
   try {
     const accountsRef = collection(db, 'accounts');
+    // La consulta debe usar el mismo campo que las reglas de seguridad (memberIds)
     const q = query(accountsRef, where('memberIds', 'array-contains', userId));
 
     const unsubscribe = onSnapshot(
@@ -184,13 +188,14 @@ export function subscribeToUserAccounts(
         try {
           const accountPromises = querySnapshot.docs.map(async (docSnapshot) => {
             const accountData = docSnapshot.data();
+            const memberIds = accountData.memberIds || accountData.members || [];
             const account: Account = {
               id: docSnapshot.id,
               name: accountData.name,
               type: accountData.type,
               currency: accountData.currency,
               ownerId: accountData.ownerId,
-              memberIds: accountData.memberIds,
+              memberIds,
               joinCode: accountData.joinCode || undefined,
               createdAt: accountData.createdAt,
               updatedAt: accountData.updatedAt,
@@ -249,7 +254,8 @@ export async function createAccount(
       type: accountData.type,
       currency: accountData.currency,
       ownerId: userId,
-      memberIds: [userId], // El creador es siempre miembro
+      // Campo usado por las reglas de seguridad: request.auth.uid in resource.data.memberIds
+      memberIds: [userId],
       createdAt: serverTimestamp() as any,
       updatedAt: serverTimestamp() as any,
     };
@@ -291,6 +297,7 @@ export async function findAccountByJoinCode(joinCode: string): Promise<Account |
 
     const docSnapshot = querySnapshot.docs[0];
     const accountData = docSnapshot.data();
+    const memberIds = accountData.memberIds || accountData.members || [];
 
     return {
       id: docSnapshot.id,
@@ -298,7 +305,7 @@ export async function findAccountByJoinCode(joinCode: string): Promise<Account |
       type: accountData.type,
       currency: accountData.currency,
       ownerId: accountData.ownerId,
-      memberIds: accountData.memberIds,
+      memberIds,
       joinCode: accountData.joinCode || undefined,
       createdAt: accountData.createdAt,
       updatedAt: accountData.updatedAt,
@@ -326,7 +333,7 @@ export async function joinAccount(accountId: string, userId: string): Promise<Ac
     }
 
     const accountData = accountDoc.data();
-    const memberIds = accountData.memberIds || [];
+    const memberIds = accountData.memberIds || accountData.members || [];
 
     // Verificar que el usuario no sea ya miembro
     if (memberIds.includes(userId)) {
@@ -338,6 +345,7 @@ export async function joinAccount(accountId: string, userId: string): Promise<Ac
 
     // Actualizar el documento
     await updateDoc(accountRef, {
+      // Mantener el campo alineado con las reglas (solo memberIds)
       memberIds: updatedMemberIds,
       updatedAt: serverTimestamp(),
     });

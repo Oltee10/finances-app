@@ -103,13 +103,14 @@ export default function AccountDetailsScreen() {
       }
 
       const accountData = accountDoc.data();
+      const memberIds = accountData.members || accountData.memberIds || [];
       const loadedAccount: Account = {
         id: accountDoc.id,
         name: accountData.name,
         type: accountData.type,
         currency: accountData.currency,
         ownerId: accountData.ownerId,
-        memberIds: accountData.memberIds,
+        memberIds,
         joinCode: accountData.joinCode || undefined,
         createdAt: accountData.createdAt,
         updatedAt: accountData.updatedAt,
@@ -215,13 +216,14 @@ export default function AccountDetailsScreen() {
       (snapshot: DocumentSnapshot) => {
         if (snapshot.exists()) {
           const accountData = snapshot.data();
+          const memberIds = accountData.members || accountData.memberIds || [];
           const updatedAccount: Account = {
             id: snapshot.id,
             name: accountData.name,
             type: accountData.type,
             currency: accountData.currency,
             ownerId: accountData.ownerId,
-            memberIds: accountData.memberIds,
+            memberIds,
             joinCode: accountData.joinCode || undefined,
             createdAt: accountData.createdAt,
             updatedAt: accountData.updatedAt,
