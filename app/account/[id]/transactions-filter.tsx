@@ -23,14 +23,14 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
 export default function TransactionsFilterScreen() {
@@ -50,6 +50,7 @@ export default function TransactionsFilterScreen() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [userNamesMap, setUserNamesMap] = useState<Record<string, string>>({});
+  const [loadingUserNames, setLoadingUserNames] = useState<Set<string>>(new Set());
 
   // Filtros - estos se pasarán de vuelta a la pantalla anterior
   const [filterType, setFilterType] = useState<'ALL' | 'INCOME' | 'EXPENSE'>('ALL');
@@ -166,6 +167,75 @@ export default function TransactionsFilterScreen() {
   };
 
   /**
+   * Carga el username de un usuario específico desde Firebase
+   * Intenta primero en users/userId, y si no existe, en accounts/userId
+   */
+  const loadUserName = async (userId: string): Promise<string | null> => {
+    // Si ya está cargando, no hacer nada
+    if (loadingUserNames.has(userId)) {
+      return null;
+    }
+
+    // Si ya está en el mapa, retornar el valor
+    if (userNamesMap[userId]) {
+      return userNamesMap[userId];
+    }
+
+    // Marcar como cargando
+    setLoadingUserNames(prev => new Set(prev).add(userId));
+
+    try {
+      // Intentar primero en users/userId
+      const userDoc = await getDoc(doc(db, 'users', userId));
+      if (userDoc.exists()) {
+        const userData = userDoc.data() as User;
+        const username = userData.username;
+        // Actualizar el mapa
+        setUserNamesMap(prev => ({ ...prev, [userId]: username }));
+        setLoadingUserNames(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(userId);
+          return newSet;
+        });
+        return username;
+      }
+
+      // Si no existe en users, intentar en accounts/userId
+      const accountDoc = await getDoc(doc(db, 'accounts', userId));
+      if (accountDoc.exists()) {
+        const accountData = accountDoc.data();
+        // Buscar el campo username en el documento de account
+        if (accountData.username) {
+          const username = accountData.username;
+          setUserNamesMap(prev => ({ ...prev, [userId]: username }));
+          setLoadingUserNames(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(userId);
+            return newSet;
+          });
+          return username;
+        }
+      }
+
+      // Si no se encontró en ningún lugar
+      setLoadingUserNames(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(userId);
+        return newSet;
+      });
+      return null;
+    } catch (error) {
+      console.error(`Error cargando usuario ${userId}:`, error);
+      setLoadingUserNames(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(userId);
+        return newSet;
+      });
+      return null;
+    }
+  };
+
+  /**
    * Carga los nombres de usuario para los userIds únicos
    */
   useEffect(() => {
@@ -178,21 +248,29 @@ export default function TransactionsFilterScreen() {
       // Cargar el username para cada userId
       const promises = userIds.map(async (userId) => {
         try {
+          // Intentar primero en users/userId
           const userDoc = await getDoc(doc(db, 'users', userId));
           if (userDoc.exists()) {
             const userData = userDoc.data() as User;
             namesMap[userId] = userData.username;
-          } else {
-            namesMap[userId] = userId.substring(0, 8) + '...'; // Fallback si no existe
+            return;
+          }
+
+          // Si no existe en users, intentar en accounts/userId
+          const accountDoc = await getDoc(doc(db, 'accounts', userId));
+          if (accountDoc.exists()) {
+            const accountData = accountDoc.data();
+            if (accountData.username) {
+              namesMap[userId] = accountData.username;
+            }
           }
         } catch (error) {
           console.error(`Error cargando usuario ${userId}:`, error);
-          namesMap[userId] = userId.substring(0, 8) + '...'; // Fallback en caso de error
         }
       });
 
       await Promise.all(promises);
-      setUserNamesMap(namesMap);
+      setUserNamesMap(prev => ({ ...prev, ...namesMap }));
     };
 
     if (transactions.length > 0) {
@@ -397,27 +475,39 @@ export default function TransactionsFilterScreen() {
                       {t('transactions.filter.all.users')}
                     </ThemedText>
                   </TouchableOpacity>
-                  {getUniqueUserIds().map((userId) => (
-                    <TouchableOpacity
-                      key={userId}
-                      style={[
-                        styles.categoryButton,
-                        filterUserId === userId && {
-                          backgroundColor: typeColor,
-                        },
-                        { borderColor: colors.icon },
-                      ]}
-                      onPress={() => setFilterUserId(userId)}
-                      activeOpacity={0.7}>
-                      <ThemedText
+                  {getUniqueUserIds().map((userId) => {
+                    // Cargar username si no está en el mapa
+                    if (!userNamesMap[userId] && userId !== user?.id && !loadingUserNames.has(userId)) {
+                      loadUserName(userId);
+                    }
+
+                    // Determinar qué mostrar
+                    const displayName = userId === user?.id 
+                      ? t('transactions.filter.me') 
+                      : (userNamesMap[userId] || (loadingUserNames.has(userId) ? '...' : ''));
+
+                    return (
+                      <TouchableOpacity
+                        key={userId}
                         style={[
-                          styles.categoryButtonText,
-                          filterUserId === userId && [styles.categoryButtonTextActive, { color: '#FFFFFF' }],
-                        ]}>
-                        {userId === user?.id ? t('transactions.filter.me') : (userNamesMap[userId] || userId.substring(0, 8) + '...')}
-                      </ThemedText>
-                    </TouchableOpacity>
-                  ))}
+                          styles.categoryButton,
+                          filterUserId === userId && {
+                            backgroundColor: typeColor,
+                          },
+                          { borderColor: colors.icon },
+                        ]}
+                        onPress={() => setFilterUserId(userId)}
+                        activeOpacity={0.7}>
+                        <ThemedText
+                          style={[
+                            styles.categoryButtonText,
+                            filterUserId === userId && [styles.categoryButtonTextActive, { color: '#FFFFFF' }],
+                          ]}>
+                          {displayName || '...'}
+                        </ThemedText>
+                      </TouchableOpacity>
+                    );
+                  })}
                 </View>
               </View>
             )}
