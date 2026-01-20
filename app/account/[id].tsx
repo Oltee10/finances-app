@@ -11,6 +11,7 @@
  * - Botón para agregar transacciones
  */
 
+import { ConfirmModal } from '@/components/ConfirmModal';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { db } from '@/config/firebase';
@@ -37,7 +38,6 @@ import {
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
   Modal,
   Platform,
@@ -355,46 +355,27 @@ export default function AccountDetailsScreen() {
 
   /**
    * Elimina la cuenta y todas sus transacciones (eliminación en cascada)
-   * Usando el mismo flujo de confirmación (Alert / Modal RN) en todas las plataformas
+   * Usando ConfirmModal para una UI consistente en todas las plataformas
    */
   const handleDeleteAccount = async (): Promise<void> => {
     if (!accountId || !account) return;
+    setShowDeleteConfirmModal(true);
+  };
 
-    // Mismo flujo de confirmación en todas las plataformas (incluyendo Web)
-    Alert.alert(
-      t('account.delete'),
-      t('account.delete.confirm'),
-      [
-        {
-          text: t('account.delete.cancel'),
-          style: 'cancel',
-        },
-        {
-          text: t('account.delete.continue'),
-          onPress: () => {
-            Alert.alert(
-              t('account.delete.warning'),
-              t('account.delete.warning.text'),
-              [
-                {
-                  text: t('account.delete.cancel'),
-                  style: 'cancel',
-                },
-                {
-                  text: t('account.delete.confirm.button'),
-                  style: 'destructive',
-                  onPress: async () => {
-                    await performAccountDeletion();
-                  },
-                },
-              ],
-              { cancelable: true }
-            );
-          },
-        },
-      ],
-      { cancelable: true }
-    );
+  /**
+   * Maneja la primera confirmación de eliminación
+   */
+  const handleDeleteConfirm = (): void => {
+    setShowDeleteConfirmModal(false);
+    setShowDeleteWarningModal(true);
+  };
+
+  /**
+   * Ejecuta la eliminación después de la segunda confirmación
+   */
+  const handleDeleteFinal = async (): Promise<void> => {
+    setShowDeleteWarningModal(false);
+    await performAccountDeletion();
   };
 
   /**
@@ -1099,6 +1080,32 @@ export default function AccountDetailsScreen() {
         activeOpacity={0.8}>
         <Text style={[styles.fabText, { color: "#FFFFFF" }]}>+</Text>
       </TouchableOpacity>
+
+      {/* Modal de Confirmación de Eliminación (Primera) */}
+      <ConfirmModal
+        visible={showDeleteConfirmModal}
+        title={t('account.delete')}
+        message={t('account.delete.confirm')}
+        confirmText={t('account.delete.continue')}
+        cancelText={t('account.delete.cancel')}
+        confirmButtonStyle="default"
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => setShowDeleteConfirmModal(false)}
+        cancelable={true}
+      />
+
+      {/* Modal de Advertencia Final de Eliminación (Segunda) */}
+      <ConfirmModal
+        visible={showDeleteWarningModal}
+        title={t('account.delete.warning')}
+        message={t('account.delete.warning.text')}
+        confirmText={t('account.delete.confirm.button')}
+        cancelText={t('account.delete.cancel')}
+        confirmButtonStyle="destructive"
+        onConfirm={handleDeleteFinal}
+        onCancel={() => setShowDeleteWarningModal(false)}
+        cancelable={true}
+      />
     </ThemedView>
   );
 }

@@ -22,7 +22,12 @@
     "web": {
       "output": "static",
       "favicon": "./assets/images/icon_finances_app.png",
-      "bundler": "metro"
+      "bundler": "metro",
+      "display": "standalone",
+      "meta": {
+        "apple-mobile-web-app-capable": "yes",
+        "apple-mobile-web-app-status-bar-style": "black-translucent"
+      }
     },
     "plugins": [
       "expo-router",

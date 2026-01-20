@@ -9,6 +9,7 @@
  * - Modal de configuración (tema, idioma, cerrar sesión)
  */
 
+import { ConfirmModal } from '@/components/ConfirmModal';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Colors } from '@/constants/theme';
@@ -22,7 +23,6 @@ import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
   Modal,
   Platform,
@@ -45,6 +45,7 @@ export default function HomeScreen() {
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [showSettingsModal, setShowSettingsModal] = useState<boolean>(false);
+  const [showLogoutModal, setShowLogoutModal] = useState<boolean>(false);
 
   /**
    * Suscripción en tiempo real a las cuentas del usuario
@@ -114,38 +115,21 @@ export default function HomeScreen() {
   };
 
   /**
-   * Maneja el logout con confirmación
+   * Maneja el logout con confirmación usando ConfirmModal
    */
   const handleLogout = (): void => {
     setShowSettingsModal(false);
-    if (Platform.OS === 'web') {
-      if (typeof window !== 'undefined' && window.confirm(t('settings.logout.confirm'))) {
-        logout().catch((error) => {
-          console.error('Error al cerrar sesión:', error);
-        });
-      }
-    } else {
-      Alert.alert(
-        t('settings.logout'),
-        t('settings.logout.confirm'),
-        [
-          {
-            text: t('settings.logout.cancel'),
-            style: 'cancel',
-          },
-          {
-            text: t('settings.logout.confirm.button'),
-            style: 'destructive',
-            onPress: () => {
-              logout().catch((error) => {
-                console.error('Error al cerrar sesión:', error);
-                Alert.alert('Error', 'No se pudo cerrar sesión. Intenta de nuevo.');
-              });
-            },
-          },
-        ]
-      );
-    }
+    setShowLogoutModal(true);
+  };
+
+  /**
+   * Ejecuta el logout después de confirmación
+   */
+  const executeLogout = (): void => {
+    setShowLogoutModal(false);
+    logout().catch((error) => {
+      console.error('Error al cerrar sesión:', error);
+    });
   };
 
   /**
@@ -459,6 +443,19 @@ export default function HomeScreen() {
             </ThemedView>
           </TouchableOpacity>
         </Modal>
+
+        {/* Modal de Confirmación de Logout */}
+        <ConfirmModal
+          visible={showLogoutModal}
+          title={t('settings.logout')}
+          message={t('settings.logout.confirm')}
+          confirmText={t('settings.logout.confirm.button')}
+          cancelText={t('settings.logout.cancel')}
+          confirmButtonStyle="destructive"
+          onConfirm={executeLogout}
+          onCancel={() => setShowLogoutModal(false)}
+          cancelable={true}
+        />
       </SafeAreaView>
     </ThemedView>
   );

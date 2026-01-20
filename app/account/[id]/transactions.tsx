@@ -9,6 +9,7 @@
  * - Ordenamiento personalizable
  */
 
+import { ConfirmModal } from '@/components/ConfirmModal';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { db } from '@/config/firebase';
@@ -25,7 +26,6 @@ import { doc, onSnapshot } from 'firebase/firestore';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
   Modal,
   Platform,
@@ -424,38 +424,21 @@ export default function AllTransactionsScreen() {
     sortOrder !== 'newest';
 
   /**
-   * Maneja el logout con confirmación
+   * Maneja el logout con confirmación usando ConfirmModal
    */
   const handleLogout = (): void => {
     setShowSettingsModal(false);
-    if (Platform.OS === 'web') {
-      if (typeof window !== 'undefined' && window.confirm(t('settings.logout.confirm'))) {
-        logout().catch((error) => {
-          console.error('Error al cerrar sesión:', error);
-        });
-      }
-    } else {
-      Alert.alert(
-        t('settings.logout'),
-        t('settings.logout.confirm'),
-        [
-          {
-            text: t('settings.logout.cancel'),
-            style: 'cancel',
-          },
-          {
-            text: t('settings.logout.confirm.button'),
-            style: 'destructive',
-            onPress: () => {
-              logout().catch((error) => {
-                console.error('Error al cerrar sesión:', error);
-                Alert.alert('Error', 'No se pudo cerrar sesión. Intenta de nuevo.');
-              });
-            },
-          },
-        ]
-      );
-    }
+    setShowLogoutModal(true);
+  };
+
+  /**
+   * Ejecuta el logout después de confirmación
+   */
+  const executeLogout = (): void => {
+    setShowLogoutModal(false);
+    logout().catch((error) => {
+      console.error('Error al cerrar sesión:', error);
+    });
   };
 
   if (loading || !account) {
@@ -664,6 +647,19 @@ export default function AllTransactionsScreen() {
           </ThemedView>
         </TouchableOpacity>
       </Modal>
+
+      {/* Modal de Confirmación de Logout */}
+      <ConfirmModal
+        visible={showLogoutModal}
+        title={t('settings.logout')}
+        message={t('settings.logout.confirm')}
+        confirmText={t('settings.logout.confirm.button')}
+        cancelText={t('settings.logout.cancel')}
+        confirmButtonStyle="destructive"
+        onConfirm={executeLogout}
+        onCancel={() => setShowLogoutModal(false)}
+        cancelable={true}
+      />
     </ThemedView>
   );
 }
