@@ -171,47 +171,53 @@ export default function TransactionsFilterScreen() {
   useEffect(() => {
     const loadUserNames = async () => {
       const userIds = getUniqueUserIds();
-      if (userIds.length === 0) return;
+      if (userIds.length === 0) {
+        return;
+      }
 
-      const namesMap: Record<string, string> = {};
+      console.log('Cargando usernames para userIds:', userIds);
 
-      // Cargar el username para cada userId
-      const promises = userIds.map(async (userId) => {
+      // Cargar el username para cada userId desde users/{userId}
+      const promises = userIds.map(async (userId): Promise<[string, string | null]> => {
         try {
-          // Intentar primero en users/userId
-          const userDoc = await getDoc(doc(db, 'users', userId));
+          // Buscar en users/userId y obtener el campo username
+          const userDocRef = doc(db, 'users', userId);
+          const userDoc = await getDoc(userDocRef);
+          
           if (userDoc.exists()) {
             const userData = userDoc.data();
-            // El username está en el campo 'username' del documento
-            if (userData.username && typeof userData.username === 'string') {
-              namesMap[userId] = userData.username;
-              return;
+            const username = userData.username;
+            console.log(`Usuario ${userId} encontrado, username:`, username);
+            if (username && typeof username === 'string') {
+              return [userId, username];
+            } else {
+              console.warn(`Usuario ${userId} no tiene username válido:`, username);
             }
-          }
-
-          // Si no existe en users, intentar en accounts/userId (por si acaso)
-          const accountDoc = await getDoc(doc(db, 'accounts', userId));
-          if (accountDoc.exists()) {
-            const accountData = accountDoc.data();
-            if (accountData.username && typeof accountData.username === 'string') {
-              namesMap[userId] = accountData.username;
-              return;
-            }
+          } else {
+            console.warn(`Usuario ${userId} no existe en users`);
           }
         } catch (error) {
           console.error(`Error cargando usuario ${userId}:`, error);
         }
+        return [userId, null];
       });
 
-      await Promise.all(promises);
-      // Actualizar el mapa con los nuevos valores
+      const results = await Promise.all(promises);
+      
+      // Crear el mapa con los resultados
+      const newNamesMap: Record<string, string> = {};
+      results.forEach(([userId, username]) => {
+        if (username) {
+          newNamesMap[userId] = username;
+        }
+      });
+
+      console.log('Usernames cargados:', newNamesMap);
+
+      // Actualizar el estado con todos los usernames encontrados
       setUserNamesMap(prev => {
-        const updated = { ...prev };
-        Object.keys(namesMap).forEach(key => {
-          if (namesMap[key]) {
-            updated[key] = namesMap[key];
-          }
-        });
+        const updated = { ...prev, ...newNamesMap };
+        console.log('Estado actualizado de userNamesMap:', updated);
         return updated;
       });
     };
@@ -423,6 +429,11 @@ export default function TransactionsFilterScreen() {
                     const displayName = userId === user?.id 
                       ? t('transactions.filter.me') 
                       : userNamesMap[userId] || '...';
+
+                    // Debug: verificar qué se está mostrando
+                    if (userId !== user?.id && !userNamesMap[userId]) {
+                      console.log(`⚠️ Username no encontrado para userId: ${userId}, userNamesMap:`, userNamesMap);
+                    }
 
                     return (
                       <TouchableOpacity
