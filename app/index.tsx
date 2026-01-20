@@ -488,7 +488,7 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 24,
-    paddingTop: 24,
+    paddingTop: 34,
     paddingBottom: 20,
     ...Platform.select({
       ios: {

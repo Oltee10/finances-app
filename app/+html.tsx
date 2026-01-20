@@ -14,7 +14,7 @@ export default function Root({ children }: PropsWithChildren) {
         <meta name="theme-color" content="#ffffff" />
 
         {/* 2. FORCE IOS ICON */}
-        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        <link rel="apple-touch-icon" href="/icon-vfinal.png" />
 
         {/* 3. BACKGROUND (Overscroll Area) - Será actualizado dinámicamente desde _layout.tsx */}
         <style dangerouslySetInnerHTML={{ __html: `
