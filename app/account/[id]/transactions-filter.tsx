@@ -244,7 +244,7 @@ export default function TransactionsFilterScreen() {
     return (
       <ThemedView style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={colors.tint} />
-        <ThemedText style={styles.loadingText}>Cargando...</ThemedText>
+        <ThemedText style={styles.loadingText}>{t('transactions.filter.loading')}</ThemedText>
       </ThemedView>
     );
   }
@@ -264,7 +264,7 @@ export default function TransactionsFilterScreen() {
             {/* Header */}
             <View style={styles.header}>
               <ThemedText type="title" style={styles.title}>
-                Filtrar Transacciones
+                {t('transactions.filter.title.screen')}
               </ThemedText>
             </View>
 
@@ -395,7 +395,7 @@ export default function TransactionsFilterScreen() {
                         styles.categoryButtonText,
                         filterUserId === 'ALL' && [styles.categoryButtonTextActive, { color: '#FFFFFF' }],
                       ]}>
-                      Todos
+                      {t('transactions.filter.all.users')}
                     </ThemedText>
                   </TouchableOpacity>
                   {getUniqueUserIds().map((userId) => (
@@ -425,7 +425,7 @@ export default function TransactionsFilterScreen() {
 
             {/* Filtro por Método de Pago */}
             <View style={styles.inputContainer}>
-              <ThemedText style={styles.label}>Método de Pago</ThemedText>
+              <ThemedText style={styles.label}>{t('transactions.filter.payment.method')}</ThemedText>
               <View style={styles.typeSelector}>
                 <TouchableOpacity
                   style={[
@@ -460,7 +460,7 @@ export default function TransactionsFilterScreen() {
                       styles.typeButtonText,
                       filterPaymentMethod === 'CASH' && [styles.typeButtonTextActive, { color: '#FFFFFF' }],
                     ]}>
-                    💵 Efectivo
+                    💵 {t('transactions.filter.payment.cash')}
                   </ThemedText>
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -478,7 +478,7 @@ export default function TransactionsFilterScreen() {
                       styles.typeButtonText,
                       filterPaymentMethod === 'CARD' && [styles.typeButtonTextActive, { color: '#FFFFFF' }],
                     ]}>
-                    💳 Tarjeta
+                    💳 {t('transactions.filter.payment.card')}
                   </ThemedText>
                 </TouchableOpacity>
               </View>

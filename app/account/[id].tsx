@@ -487,7 +487,7 @@ export default function AccountDetailsScreen() {
     return (
       <ThemedView style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={colors.tint} />
-        <ThemedText style={styles.loadingText}>Cargando cuenta...</ThemedText>
+        <ThemedText style={styles.loadingText}>{t('account.loading')}</ThemedText>
       </ThemedView>
     );
   }
@@ -619,7 +619,7 @@ export default function AccountDetailsScreen() {
         {t('account.empty.transactions')}
       </ThemedText>
       <ThemedText style={styles.emptyTransactionsSubtext}>
-        Toca el botón "+" para agregar tu primera transacción
+        {t('account.empty.transactions.subtext')}
       </ThemedText>
     </View>
   );
@@ -683,7 +683,7 @@ export default function AccountDetailsScreen() {
               style={[styles.addTransactionButton, { backgroundColor: colors.tint }]}
               onPress={navigateToAddTransaction}
               activeOpacity={0.8}>
-              <Text style={[styles.addTransactionButtonText, { color: '#FFFFFF' }]}>+ Agregar transacción</Text>
+              <Text style={[styles.addTransactionButtonText, { color: '#FFFFFF' }]}>+ {t('account.add_transaction')}</Text>
             </TouchableOpacity>
           </View>
           
@@ -762,7 +762,7 @@ export default function AccountDetailsScreen() {
                         styles.filterTypeButtonText,
                         filterType === 'ALL' && { color: '#FFFFFF' },
                       ]}>
-                      Todas
+                      {t('account.filter.all')}
                     </Text>
                   </TouchableOpacity>
                   <TouchableOpacity
@@ -817,7 +817,7 @@ export default function AccountDetailsScreen() {
                         styles.categoryButtonText,
                         filterCategory === 'ALL' && { color: '#FFFFFF' },
                       ]}>
-                      Todas las categorías
+                      {t('account.filter.all.categories')}
                     </Text>
                   </TouchableOpacity>
                   {getUniqueCategories().map((category) => (
@@ -861,7 +861,7 @@ export default function AccountDetailsScreen() {
                           styles.categoryButtonText,
                           filterUserId === 'ALL' && { color: '#FFFFFF' },
                         ]}>
-                        Todos los usuarios
+                        {t('account.filter.all.users')}
                       </Text>
                     </TouchableOpacity>
                     {getUniqueUserIds().map((userId) => (
@@ -936,7 +936,7 @@ export default function AccountDetailsScreen() {
                         styles.filterTypeButtonText,
                         filterMinAmount === null && filterMaxAmount === null && { color: '#FFFFFF' },
                       ]}>
-                      Todos
+                      {t('account.filter.all')}
                     </Text>
                   </TouchableOpacity>
                   <TouchableOpacity

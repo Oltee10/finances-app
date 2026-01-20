@@ -35,6 +35,7 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const CURRENCY_SYMBOLS: Record<string, string> = {
   EUR: '€',
@@ -467,52 +468,54 @@ export default function AllTransactionsScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      {/* Header */}
-      <View style={[styles.header, { backgroundColor: colors.background }]}>
-        <View style={styles.headerTop}>
-          <TouchableOpacity 
-            onPress={() => router.back()} 
-            style={[styles.backButton, { backgroundColor: colors.background + '20' }]}
-            activeOpacity={0.7}>
-            <MaterialIcons name="arrow-back" size={20} color={colors.tint} />
-            <ThemedText style={[styles.backButtonText, { color: colors.tint }]}>{t('account.back')}</ThemedText>
-          </TouchableOpacity>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
+        {/* Header */}
+        <View style={[styles.header, { backgroundColor: colors.background }]}>
+          <View style={styles.headerTop}>
+            <TouchableOpacity 
+              onPress={() => router.back()} 
+              style={[styles.backButton, { backgroundColor: colors.background + '20' }]}
+              activeOpacity={0.7}>
+              <MaterialIcons name="arrow-back" size={20} color={colors.tint} />
+              <ThemedText style={[styles.backButtonText, { color: colors.tint }]}>{t('account.back')}</ThemedText>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.settingsButton, { backgroundColor: colors.background + '20' }]}
+              onPress={() => setShowSettingsModal(true)}
+              activeOpacity={0.7}>
+              <MaterialIcons name="settings" size={22} color={colors.tint} />
+            </TouchableOpacity>
+          </View>
+          <ThemedText type="title" style={styles.title}>
+            {t('transactions.all')}
+          </ThemedText>
+          <ThemedText style={styles.subtitle}>
+            {filteredTransactions.length} {filteredTransactions.length === 1 ? t('account.transaction') : t('account.transactions.plural')}
+          </ThemedText>
+          
+          {/* Botón Filtrar Transacciones */}
           <TouchableOpacity
-            style={[styles.settingsButton, { backgroundColor: colors.background + '20' }]}
-            onPress={() => setShowSettingsModal(true)}
+            style={[styles.filterTransactionsButton, { borderColor: colors.icon }]}
+            onPress={() => router.push(`/account/${accountId}/transactions-filter`)}
             activeOpacity={0.7}>
-            <MaterialIcons name="settings" size={22} color={colors.tint} />
+            <ThemedText style={styles.filterTransactionsButtonText}>{t('transactions.filter')}</ThemedText>
           </TouchableOpacity>
         </View>
-        <ThemedText type="title" style={styles.title}>
-          {t('transactions.all')}
-        </ThemedText>
-        <ThemedText style={styles.subtitle}>
-          {filteredTransactions.length} {filteredTransactions.length === 1 ? t('account.transaction') : t('account.transactions.plural')}
-        </ThemedText>
-        
-        {/* Botón Filtrar Transacciones */}
-        <TouchableOpacity
-          style={[styles.filterTransactionsButton, { borderColor: colors.icon }]}
-          onPress={() => router.push(`/account/${accountId}/transactions-filter`)}
-          activeOpacity={0.7}>
-          <ThemedText style={styles.filterTransactionsButtonText}>{t('transactions.filter')}</ThemedText>
-        </TouchableOpacity>
-      </View>
 
-      {/* Lista de Transacciones */}
-      <FlatList
-        data={filteredTransactions}
-        renderItem={renderTransaction}
-        keyExtractor={(item) => item.id}
-        ListEmptyComponent={renderEmptyComponent}
-        contentContainerStyle={[
-          styles.flatListContent,
-          filteredTransactions.length === 0 && styles.flatListContentEmpty,
-        ]}
-        ItemSeparatorComponent={() => <View style={styles.transactionSeparator} />}
-        showsVerticalScrollIndicator={false}
-      />
+        {/* Lista de Transacciones */}
+        <FlatList
+          data={filteredTransactions}
+          renderItem={renderTransaction}
+          keyExtractor={(item) => item.id}
+          ListEmptyComponent={renderEmptyComponent}
+          contentContainerStyle={[
+            styles.flatListContent,
+            filteredTransactions.length === 0 && styles.flatListContentEmpty,
+          ]}
+          ItemSeparatorComponent={() => <View style={styles.transactionSeparator} />}
+          showsVerticalScrollIndicator={false}
+        />
+      </SafeAreaView>
 
       {/* Modal de Configuración */}
       <Modal
@@ -698,9 +701,11 @@ export default function AllTransactionsScreen() {
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+  },
   container: {
     flex: 1,
-    paddingTop: 50,
   },
   loadingContainer: {
     flex: 1,
@@ -717,6 +722,20 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     paddingBottom: 24,
     gap: 16,
+    ...Platform.select({
+      ios: {
+        // shadowColor handled via theme
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 2,
+      },
+      web: {
+        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+      },
+    }),
   },
   headerTop: {
     flexDirection: 'row',

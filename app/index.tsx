@@ -283,7 +283,7 @@ export default function HomeScreen() {
                 style={[styles.addButton, { backgroundColor: colors.tint }]}
                 onPress={navigateToCreateAccount}
                 activeOpacity={0.8}>
-                <Text style={[styles.addButtonText, { color: '#FFFFFF' }]}>+ Agregar finanza</Text>
+                <Text style={[styles.addButtonText, { color: '#FFFFFF' }]}>+ {t('home.add_account')}</Text>
               </TouchableOpacity>
             ) : null
           }

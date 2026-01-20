@@ -174,12 +174,12 @@ export default function TransactionAddScreen() {
    */
   const validateForm = (): boolean => {
     if (amountRaw <= 0) {
-      setError('El monto debe ser un número positivo');
+      setError(t('transaction.add.validation.amount.required'));
       return false;
     }
 
     if (!category || category.trim().length === 0) {
-      setError('La categoría es requerida');
+      setError(t('transaction.add.validation.category.required'));
       return false;
     }
 
@@ -192,12 +192,12 @@ export default function TransactionAddScreen() {
    */
   const handleCreateTransaction = async (): Promise<void> => {
     if (!user) {
-      Alert.alert('Error', 'No estás autenticado');
+      Alert.alert(t('common.error'), t('transaction.add.error.not.authenticated'));
       return;
     }
 
     if (!accountId) {
-      Alert.alert('Error', 'ID de cuenta no proporcionado');
+      Alert.alert(t('common.error'), t('transaction.add.error.no.account.id'));
       router.back();
       return;
     }
@@ -331,7 +331,7 @@ export default function TransactionAddScreen() {
 
             {/* Selector de Método de Pago */}
             <View style={styles.inputContainer}>
-              <ThemedText style={styles.label}>Método de Pago</ThemedText>
+              <ThemedText style={styles.label}>{t('transaction.add.payment.method')}</ThemedText>
               <View style={styles.typeSelector}>
                 <TouchableOpacity
                   style={[
@@ -351,7 +351,7 @@ export default function TransactionAddScreen() {
                       styles.typeButtonText,
                       paymentMethod === 'CASH' && [styles.typeButtonTextActive, { color: '#FFFFFF' }],
                     ]}>
-                    💵 Efectivo
+                    💵 {t('transaction.add.payment.cash')}
                   </ThemedText>
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -372,7 +372,7 @@ export default function TransactionAddScreen() {
                       styles.typeButtonText,
                       paymentMethod === 'CARD' && [styles.typeButtonTextActive, { color: '#FFFFFF' }],
                     ]}>
-                    💳 Tarjeta
+                    💳 {t('transaction.add.payment.card')}
                   </ThemedText>
                 </TouchableOpacity>
               </View>
