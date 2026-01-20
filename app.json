@@ -25,7 +25,7 @@
       "display": "standalone",
       "scope": "/",
       "startUrl": "/finances",
-      "favicon": "./assets/images/icon_finances_app.png",
+      "favicon": "./public/apple-touch-icon.png",
       "meta": {
         "apple-mobile-web-app-capable": "yes",
         "apple-mobile-web-app-status-bar-style": "black-translucent",

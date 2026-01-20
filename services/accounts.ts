@@ -105,7 +105,12 @@ export async function calculateAccountBalance(accountId: string): Promise<number
     });
 
     return balance;
-  } catch (error) {
+  } catch (error: any) {
+    // Manejar errores de permisos o cualquier otro error de Firebase
+    if (error?.code === 'permission-denied' || error?.message?.includes('permission')) {
+      console.warn('Permisos insuficientes para calcular balance de cuenta:', accountId);
+      return 0;
+    }
     console.error('Error calculando balance:', error);
     return 0;
   }
@@ -129,40 +134,55 @@ export async function getUserAccounts(userId: string): Promise<AccountWithBalanc
 
     // Obtener cuentas y calcular balances en paralelo
     const accountPromises = querySnapshot.docs.map(async (docSnapshot) => {
-      const accountData = docSnapshot.data();
-      const memberIds = accountData.memberIds || accountData.members || [];
-      const account: Account = {
-        id: docSnapshot.id,
-        name: accountData.name,
-        type: accountData.type,
-        currency: accountData.currency,
-        ownerId: accountData.ownerId,
-        memberIds,
-        joinCode: accountData.joinCode || undefined,
-        createdAt: accountData.createdAt,
-        updatedAt: accountData.updatedAt,
-      } as Account;
+      try {
+        const accountData = docSnapshot.data();
+        const memberIds = accountData.memberIds || accountData.members || [];
+        const account: Account = {
+          id: docSnapshot.id,
+          name: accountData.name,
+          type: accountData.type,
+          currency: accountData.currency,
+          ownerId: accountData.ownerId,
+          memberIds,
+          joinCode: accountData.joinCode || undefined,
+          createdAt: accountData.createdAt,
+          updatedAt: accountData.updatedAt,
+        } as Account;
 
-      // Calcular balance
-      const balance = await calculateAccountBalance(docSnapshot.id);
+        // Calcular balance (ya maneja errores internamente y retorna 0)
+        const balance = await calculateAccountBalance(docSnapshot.id);
 
-      return {
-        ...account,
-        balance,
-      } as AccountWithBalance;
+        return {
+          ...account,
+          balance,
+        } as AccountWithBalance;
+      } catch (error: any) {
+        // Si hay error procesando una cuenta individual, omitirla
+        console.warn('Error procesando cuenta:', docSnapshot.id, error);
+        return null;
+      }
     });
 
     const accountsWithBalances = await Promise.all(accountPromises);
+    
+    // Filtrar cuentas nulas (que tuvieron errores)
+    const validAccounts = accountsWithBalances.filter((acc): acc is AccountWithBalance => acc !== null);
 
     // Ordenar por fecha de creación (más recientes primero)
-    return accountsWithBalances.sort((a, b) => {
+    return validAccounts.sort((a, b) => {
       const aTime = a.createdAt?.toMillis() || 0;
       const bTime = b.createdAt?.toMillis() || 0;
       return bTime - aTime;
     });
-  } catch (error) {
+  } catch (error: any) {
+    // Si hay error de permisos, retornar array vacío en lugar de crashear
+    if (error?.code === 'permission-denied' || error?.message?.includes('permission')) {
+      console.warn('Permisos insuficientes para obtener cuentas del usuario');
+      return [];
+    }
     console.error('Error obteniendo cuentas del usuario:', error);
-    throw error;
+    // Retornar array vacío en lugar de lanzar error
+    return [];
   }
 }
 
@@ -187,43 +207,62 @@ export function subscribeToUserAccounts(
       async (querySnapshot: QuerySnapshot<DocumentData>) => {
         try {
           const accountPromises = querySnapshot.docs.map(async (docSnapshot) => {
-            const accountData = docSnapshot.data();
-            const memberIds = accountData.memberIds || accountData.members || [];
-            const account: Account = {
-              id: docSnapshot.id,
-              name: accountData.name,
-              type: accountData.type,
-              currency: accountData.currency,
-              ownerId: accountData.ownerId,
-              memberIds,
-              joinCode: accountData.joinCode || undefined,
-              createdAt: accountData.createdAt,
-              updatedAt: accountData.updatedAt,
-            } as Account;
+            try {
+              const accountData = docSnapshot.data();
+              const memberIds = accountData.memberIds || accountData.members || [];
+              const account: Account = {
+                id: docSnapshot.id,
+                name: accountData.name,
+                type: accountData.type,
+                currency: accountData.currency,
+                ownerId: accountData.ownerId,
+                memberIds,
+                joinCode: accountData.joinCode || undefined,
+                createdAt: accountData.createdAt,
+                updatedAt: accountData.updatedAt,
+              } as Account;
 
-            const balance = await calculateAccountBalance(docSnapshot.id);
+              // Calcular balance (ya maneja errores internamente y retorna 0)
+              const balance = await calculateAccountBalance(docSnapshot.id);
 
-            return {
-              ...account,
-              balance,
-            } as AccountWithBalance;
+              return {
+                ...account,
+                balance,
+              } as AccountWithBalance;
+            } catch (error: any) {
+              // Si hay error procesando una cuenta individual, omitirla
+              console.warn('Error procesando cuenta en snapshot:', docSnapshot.id, error);
+              return null;
+            }
           });
 
           const accountsWithBalances = await Promise.all(accountPromises);
+          
+          // Filtrar cuentas nulas (que tuvieron errores)
+          const validAccounts = accountsWithBalances.filter((acc): acc is AccountWithBalance => acc !== null);
 
-          const sorted = accountsWithBalances.sort((a, b) => {
+          const sorted = validAccounts.sort((a, b) => {
             const aTime = a.createdAt?.toMillis() || 0;
             const bTime = b.createdAt?.toMillis() || 0;
             return bTime - aTime;
           });
 
           callback(sorted);
-        } catch (error) {
+        } catch (error: any) {
+          // Si hay error general, llamar callback con array vacío
           console.error('Error procesando snapshot de cuentas:', error);
+          callback([]);
         }
       },
-      (error) => {
-        console.error('Error en listener de cuentas del usuario:', error);
+      (error: any) => {
+        // Manejar errores de permisos en el listener
+        if (error?.code === 'permission-denied' || error?.message?.includes('permission')) {
+          console.warn('Permisos insuficientes para escuchar cuentas del usuario');
+          callback([]);
+        } else {
+          console.error('Error en listener de cuentas del usuario:', error);
+          callback([]);
+        }
       }
     );
 

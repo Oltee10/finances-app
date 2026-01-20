@@ -117,9 +117,15 @@ export async function getAccountTransactions(
         createdAt: data.createdAt,
       } as Transaction;
     });
-  } catch (error) {
+  } catch (error: any) {
+    // Manejar errores de permisos
+    if (error?.code === 'permission-denied' || error?.message?.includes('permission')) {
+      console.warn('Permisos insuficientes para obtener transacciones de cuenta:', accountId);
+      return [];
+    }
     console.error('Error obteniendo transacciones:', error);
-    throw error;
+    // Retornar array vacío en lugar de lanzar error
+    return [];
   }
 }
 
@@ -190,8 +196,15 @@ export function subscribeToAccountTransactions(
 
       callback(transactions);
     },
-    (error) => {
-      console.error('Error en listener de transacciones:', error);
+    (error: any) => {
+      // Manejar errores de permisos
+      if (error?.code === 'permission-denied' || error?.message?.includes('permission')) {
+        console.warn('Permisos insuficientes para escuchar transacciones de cuenta:', accountId);
+        callback([]);
+      } else {
+        console.error('Error en listener de transacciones:', error);
+        callback([]);
+      }
     }
   );
 
