@@ -20,14 +20,16 @@
       "predictiveBackGestureEnabled": false
     },
     "web": {
-      "output": "static",
-      "favicon": "./assets/images/icon_finances_app.png",
       "bundler": "metro",
+      "output": "static",
       "display": "standalone",
+      "scope": "/",
+      "startUrl": "/finances",
+      "favicon": "./assets/images/icon_finances_app.png",
       "meta": {
         "apple-mobile-web-app-capable": "yes",
         "apple-mobile-web-app-status-bar-style": "black-translucent",
-        "apple-mobile-web-app-title": "Mis Finanzas" 
+        "apple-mobile-web-app-title": "Mis Finanzas"
       }
     },
     "plugins": [

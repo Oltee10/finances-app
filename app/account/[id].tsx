@@ -38,6 +38,7 @@ import {
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   Modal,
   Platform,
@@ -74,6 +75,8 @@ export default function AccountDetailsScreen() {
   const [deleting, setDeleting] = useState<boolean>(false);
   const [showJoinCode, setShowJoinCode] = useState<boolean>(false);
   const [showFilterModal, setShowFilterModal] = useState<boolean>(false);
+  const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState<boolean>(false);
+  const [showDeleteWarningModal, setShowDeleteWarningModal] = useState<boolean>(false);
   
   // Filtros
   const [filterType, setFilterType] = useState<'ALL' | 'INCOME' | 'EXPENSE'>('ALL');
