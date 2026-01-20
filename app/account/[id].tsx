@@ -353,28 +353,12 @@ export default function AccountDetailsScreen() {
 
   /**
    * Elimina la cuenta y todas sus transacciones (eliminación en cascada)
-   * Con confirmación específica por plataforma
+   * Usando el mismo flujo de confirmación (Alert / Modal RN) en todas las plataformas
    */
   const handleDeleteAccount = async (): Promise<void> => {
     if (!accountId || !account) return;
 
-    if (Platform.OS === 'web') {
-      // Web: usar window.confirm
-      if (typeof window === 'undefined') return;
-
-      const first = window.confirm(t('account.delete.confirm'));
-      if (!first) return;
-
-      const second = window.confirm(
-        `${t('account.delete.warning')}\n\n${t('account.delete.warning.text')}`
-      );
-      if (!second) return;
-
-      await performAccountDeletion();
-      return;
-    }
-
-    // Nativo: usar Alert.alert con doble confirmación
+    // Mismo flujo de confirmación en todas las plataformas (incluyendo Web)
     Alert.alert(
       t('account.delete'),
       t('account.delete.confirm'),
