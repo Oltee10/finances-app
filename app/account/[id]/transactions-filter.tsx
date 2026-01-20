@@ -17,7 +17,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { subscribeToAccountTransactions } from '@/services/transactions';
-import type { Account, Transaction, User } from '@/types';
+import type { Account, Transaction } from '@/types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { doc, getDoc, onSnapshot } from 'firebase/firestore';
@@ -50,7 +50,6 @@ export default function TransactionsFilterScreen() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [userNamesMap, setUserNamesMap] = useState<Record<string, string>>({});
-  const [loadingUserNames, setLoadingUserNames] = useState<Set<string>>(new Set());
 
   // Filtros - estos se pasarán de vuelta a la pantalla anterior
   const [filterType, setFilterType] = useState<'ALL' | 'INCOME' | 'EXPENSE'>('ALL');
@@ -167,75 +166,6 @@ export default function TransactionsFilterScreen() {
   };
 
   /**
-   * Carga el username de un usuario específico desde Firebase
-   * Intenta primero en users/userId, y si no existe, en accounts/userId
-   */
-  const loadUserName = async (userId: string): Promise<string | null> => {
-    // Si ya está cargando, no hacer nada
-    if (loadingUserNames.has(userId)) {
-      return null;
-    }
-
-    // Si ya está en el mapa, retornar el valor
-    if (userNamesMap[userId]) {
-      return userNamesMap[userId];
-    }
-
-    // Marcar como cargando
-    setLoadingUserNames(prev => new Set(prev).add(userId));
-
-    try {
-      // Intentar primero en users/userId
-      const userDoc = await getDoc(doc(db, 'users', userId));
-      if (userDoc.exists()) {
-        const userData = userDoc.data() as User;
-        const username = userData.username;
-        // Actualizar el mapa
-        setUserNamesMap(prev => ({ ...prev, [userId]: username }));
-        setLoadingUserNames(prev => {
-          const newSet = new Set(prev);
-          newSet.delete(userId);
-          return newSet;
-        });
-        return username;
-      }
-
-      // Si no existe en users, intentar en accounts/userId
-      const accountDoc = await getDoc(doc(db, 'accounts', userId));
-      if (accountDoc.exists()) {
-        const accountData = accountDoc.data();
-        // Buscar el campo username en el documento de account
-        if (accountData.username) {
-          const username = accountData.username;
-          setUserNamesMap(prev => ({ ...prev, [userId]: username }));
-          setLoadingUserNames(prev => {
-            const newSet = new Set(prev);
-            newSet.delete(userId);
-            return newSet;
-          });
-          return username;
-        }
-      }
-
-      // Si no se encontró en ningún lugar
-      setLoadingUserNames(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(userId);
-        return newSet;
-      });
-      return null;
-    } catch (error) {
-      console.error(`Error cargando usuario ${userId}:`, error);
-      setLoadingUserNames(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(userId);
-        return newSet;
-      });
-      return null;
-    }
-  };
-
-  /**
    * Carga los nombres de usuario para los userIds únicos
    */
   useEffect(() => {
@@ -251,17 +181,21 @@ export default function TransactionsFilterScreen() {
           // Intentar primero en users/userId
           const userDoc = await getDoc(doc(db, 'users', userId));
           if (userDoc.exists()) {
-            const userData = userDoc.data() as User;
-            namesMap[userId] = userData.username;
-            return;
+            const userData = userDoc.data();
+            // El username está en el campo 'username' del documento
+            if (userData.username && typeof userData.username === 'string') {
+              namesMap[userId] = userData.username;
+              return;
+            }
           }
 
-          // Si no existe en users, intentar en accounts/userId
+          // Si no existe en users, intentar en accounts/userId (por si acaso)
           const accountDoc = await getDoc(doc(db, 'accounts', userId));
           if (accountDoc.exists()) {
             const accountData = accountDoc.data();
-            if (accountData.username) {
+            if (accountData.username && typeof accountData.username === 'string') {
               namesMap[userId] = accountData.username;
+              return;
             }
           }
         } catch (error) {
@@ -270,7 +204,16 @@ export default function TransactionsFilterScreen() {
       });
 
       await Promise.all(promises);
-      setUserNamesMap(prev => ({ ...prev, ...namesMap }));
+      // Actualizar el mapa con los nuevos valores
+      setUserNamesMap(prev => {
+        const updated = { ...prev };
+        Object.keys(namesMap).forEach(key => {
+          if (namesMap[key]) {
+            updated[key] = namesMap[key];
+          }
+        });
+        return updated;
+      });
     };
 
     if (transactions.length > 0) {
@@ -476,15 +419,10 @@ export default function TransactionsFilterScreen() {
                     </ThemedText>
                   </TouchableOpacity>
                   {getUniqueUserIds().map((userId) => {
-                    // Cargar username si no está en el mapa
-                    if (!userNamesMap[userId] && userId !== user?.id && !loadingUserNames.has(userId)) {
-                      loadUserName(userId);
-                    }
-
                     // Determinar qué mostrar
                     const displayName = userId === user?.id 
                       ? t('transactions.filter.me') 
-                      : (userNamesMap[userId] || (loadingUserNames.has(userId) ? '...' : ''));
+                      : userNamesMap[userId] || '...';
 
                     return (
                       <TouchableOpacity
@@ -503,7 +441,7 @@ export default function TransactionsFilterScreen() {
                             styles.categoryButtonText,
                             filterUserId === userId && [styles.categoryButtonTextActive, { color: '#FFFFFF' }],
                           ]}>
-                          {displayName || '...'}
+                          {displayName}
                         </ThemedText>
                       </TouchableOpacity>
                     );
