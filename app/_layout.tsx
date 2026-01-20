@@ -1,5 +1,5 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { Stack, useRouter, useSegments } from 'expo-router';
+import { Head, Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { ActivityIndicator, Platform, StyleSheet, View } from 'react-native';
@@ -86,6 +86,13 @@ function RootLayoutNav() {
   
   return (
     <ThemeProvider value={navigationTheme}>
+      {/* Meta tags para PWA Standalone Mode en iOS */}
+      {Platform.OS === 'web' && (
+        <Head>
+          <meta name="apple-mobile-web-app-capable" content="yes" />
+          <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        </Head>
+      )}
       {Platform.OS === 'web' ? (
         <WebContainer>
           {stackContent}

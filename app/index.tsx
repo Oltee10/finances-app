@@ -140,6 +140,10 @@ export default function HomeScreen() {
     const balanceColor = isPositive ? colors.success : colors.error;
     const isDark = theme === 'dark';
 
+    const handleCardPress = () => {
+      router.push(`/account/${item.id}`);
+    };
+
     return (
       <TouchableOpacity
         style={[
@@ -150,9 +154,10 @@ export default function HomeScreen() {
           },
         ]}
         activeOpacity={0.7}
-        onPress={() => {
-          router.push(`/account/${item.id}`);
-        }}>
+        onPress={handleCardPress}
+        accessible={true}
+        accessibilityRole="button"
+        accessibilityLabel={`${item.name}, ${formatBalance(item.balance, item.currency)}`}>
         <View style={styles.accountCardContent}>
           <View style={styles.accountCardHeader}>
             <View style={styles.accountCardTitleRow}>
@@ -281,6 +286,8 @@ export default function HomeScreen() {
             />
           }
           showsVerticalScrollIndicator={false}
+          scrollEnabled={true}
+          removeClippedSubviews={false}
         />
 
         {/* FAB (Floating Action Button) */}
