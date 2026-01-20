@@ -28,7 +28,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import { UniversalDatePicker } from '@/components/UniversalDatePicker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { db } from '@/config/firebase';
 import { subscribeToAccountTransactions } from '@/services/transactions';
@@ -527,22 +527,18 @@ export default function TransactionsFilterScreen() {
               {/* Date Pickers - Posicionados a la izquierda */}
               {showStartDatePicker && (
                 <View style={styles.datePickerContainer}>
-                  <DateTimePicker
+                  <UniversalDatePicker
                     value={filterStartDate || new Date()}
                     mode="date"
                     display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                     locale={datePickerLocale}
                     textColor={theme === 'dark' ? '#FFFFFF' : '#000000'}
                     themeVariant={theme === 'dark' ? 'dark' : 'light'}
-                    onChange={(event, selectedDate) => {
+                    onChange={(selectedDate) => {
                       if (Platform.OS === 'android') {
                         setShowStartDatePicker(false);
                       }
-                      if (event.type === 'set' && selectedDate) {
-                        setFilterStartDate(selectedDate);
-                      } else if (event.type === 'dismissed') {
-                        setShowStartDatePicker(false);
-                      }
+                      setFilterStartDate(selectedDate);
                     }}
                     maximumDate={
                       (() => {
@@ -569,22 +565,18 @@ export default function TransactionsFilterScreen() {
               
               {showEndDatePicker && (
                 <View style={styles.datePickerContainer}>
-                  <DateTimePicker
+                  <UniversalDatePicker
                     value={filterEndDate || new Date()}
                     mode="date"
                     display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                     locale={datePickerLocale}
                     textColor={theme === 'dark' ? '#FFFFFF' : '#000000'}
                     themeVariant={theme === 'dark' ? 'dark' : 'light'}
-                    onChange={(event, selectedDate) => {
+                    onChange={(selectedDate) => {
                       if (Platform.OS === 'android') {
                         setShowEndDatePicker(false);
                       }
-                      if (event.type === 'set' && selectedDate) {
-                        setFilterEndDate(selectedDate);
-                      } else if (event.type === 'dismissed') {
-                        setShowEndDatePicker(false);
-                      }
+                      setFilterEndDate(selectedDate);
                     }}
                     minimumDate={filterStartDate || undefined}
                     maximumDate={new Date()}

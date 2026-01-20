@@ -57,6 +57,8 @@ export default function AllTransactionsScreen() {
   const [loading, setLoading] = useState<boolean>(true);
   const [showSettingsModal, setShowSettingsModal] = useState<boolean>(false);
   const [showLogoutModal, setShowLogoutModal] = useState<boolean>(false);
+  const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false);
+  const [transactionToDelete, setTransactionToDelete] = useState<Transaction | null>(null);
 
   // Filtros
   const [filterType, setFilterType] = useState<'ALL' | 'INCOME' | 'EXPENSE'>('ALL');
@@ -290,30 +292,26 @@ export default function AllTransactionsScreen() {
    */
   const handleDeleteTransaction = (transaction: Transaction) => {
     if (!accountId) return;
+    setTransactionToDelete(transaction);
+    setShowDeleteModal(true);
+  };
 
-    Alert.alert(
-      t('transactions.delete'),
-      t('transactions.delete.confirm'),
-      [
-        {
-          text: t('transactions.delete.cancel'),
-          style: 'cancel',
-        },
-        {
-          text: t('transactions.delete.delete'),
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await deleteTransaction(accountId, transaction.id);
-            } catch (error) {
-              console.error('Error eliminando transacción:', error);
-              Alert.alert('Error', 'No se pudo eliminar la transacción. Intenta de nuevo.');
-            }
-          },
-        },
-      ],
-      { cancelable: true }
-    );
+  /**
+   * Ejecuta la eliminación después de confirmación
+   */
+  const executeDeleteTransaction = async (): Promise<void> => {
+    if (!accountId || !transactionToDelete) return;
+    
+    setShowDeleteModal(false);
+    
+    try {
+      await deleteTransaction(accountId, transactionToDelete.id);
+      setTransactionToDelete(null);
+    } catch (error) {
+      console.error('Error eliminando transacción:', error);
+      Alert.alert('Error', 'No se pudo eliminar la transacción. Intenta de nuevo.');
+      setTransactionToDelete(null);
+    }
   };
 
   /**
@@ -459,8 +457,12 @@ export default function AllTransactionsScreen() {
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.background }]}>
         <View style={styles.headerTop}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <ThemedText style={[styles.backButtonText, { color: colors.tint }]}>← {t('account.back')}</ThemedText>
+          <TouchableOpacity 
+            onPress={() => router.back()} 
+            style={[styles.backButton, { backgroundColor: colors.background + '20' }]}
+            activeOpacity={0.7}>
+            <MaterialIcons name="arrow-back" size={20} color={colors.tint} />
+            <ThemedText style={[styles.backButtonText, { color: colors.tint }]}>{t('account.back')}</ThemedText>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.settingsButton, { backgroundColor: colors.background + '20' }]}
@@ -662,6 +664,22 @@ export default function AllTransactionsScreen() {
         onCancel={() => setShowLogoutModal(false)}
         cancelable={true}
       />
+
+      {/* Modal de Confirmación de Eliminación de Transacción */}
+      <ConfirmModal
+        visible={showDeleteModal}
+        title={t('transactions.delete')}
+        message={t('transactions.delete.confirm')}
+        confirmText={t('transactions.delete.delete')}
+        cancelText={t('transactions.delete.cancel')}
+        confirmButtonStyle="destructive"
+        onConfirm={executeDeleteTransaction}
+        onCancel={() => {
+          setShowDeleteModal(false);
+          setTransactionToDelete(null);
+        }}
+        cancelable={true}
+      />
     </ThemedView>
   );
 }
@@ -694,11 +712,17 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   backButton: {
-    paddingVertical: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 12,
   },
   backButtonText: {
     fontSize: 16,
     fontWeight: '600',
+    lineHeight: 20,
   },
   title: {
     fontSize: 28,

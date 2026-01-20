@@ -63,7 +63,7 @@ const translations: Record<Language, Record<string, string>> = {
     'account.delete.warning': 'ADVERTENCIA FINAL',
     'account.delete.warning.text': 'Esta acción es irreversible. Todas las transacciones y datos se perderán para siempre.',
     'account.delete.cancel': 'Cancelar',
-    'account.delete.confirm.button': 'ELIMINAR PERMANENTEMENTE',
+    'account.delete.confirm.button': 'ELIMINAR',
     'account.delete.continue': 'Continuar',
     // Transactions
     'transactions.all': 'Todas las Transacciones',
@@ -218,7 +218,7 @@ const translations: Record<Language, Record<string, string>> = {
     'account.delete.warning': 'FINAL WARNING',
     'account.delete.warning.text': 'This action is irreversible. All transactions and data will be lost forever.',
     'account.delete.cancel': 'Cancel',
-    'account.delete.confirm.button': 'DELETE PERMANENTLY',
+    'account.delete.confirm.button': 'DELETE',
     'account.delete.continue': 'Continue',
     // Transactions
     'transactions.all': 'All Transactions',
