@@ -16,7 +16,7 @@ Una solución moderna y multiplataforma (iOS, Android, Web) para la gestión de 
 ## 🚀 Funcionalidades Clave
 
 * **Autenticación Personalizada:** Sistema de login "Username-only" (abstracción sobre Email/Pass) con manejo de errores en tiempo real.
-* **Economía Colaborativa:** Creación de grupos financieros con códigos únicos de invitación (`joinCode`) y permisos de lectura/escritura granulares.
+* **Economía Colaborativa:** Creación de grupos financieros con códigos únicos de invitación (`inviteCode`) y permisos de lectura/escritura granulares.
 * **Multi-Divisa Inteligente:** Soporte nativo para EUR, USD y COP con formateo automático de inputs en tiempo real.
 * **Modo Oscuro Adaptativo:** Implementación de temas semánticos respetando las preferencias del sistema operativo.
 * **Seguridad:** Reglas de seguridad en Firestore (Row Level Security) asegurando que solo los miembros de un `accountId` pueden leer sus transacciones.

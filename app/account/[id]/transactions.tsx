@@ -25,15 +25,15 @@ import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { doc, onSnapshot } from 'firebase/firestore';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  FlatList,
-  Modal,
-  Platform,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View
+    ActivityIndicator,
+    Alert,
+    FlatList,
+    Modal,
+    Platform,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -98,7 +98,7 @@ export default function AllTransactionsScreen() {
           currency: accountData.currency,
           ownerId: accountData.ownerId,
           memberIds: accountData.memberIds,
-          joinCode: accountData.joinCode || undefined,
+          inviteCode: accountData.inviteCode || undefined,
           createdAt: accountData.createdAt,
           updatedAt: accountData.updatedAt,
         } as Account;

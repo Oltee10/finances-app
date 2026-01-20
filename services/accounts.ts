@@ -4,9 +4,9 @@
  * Funcionalidades:
  * - Obtener todas las cuentas donde el usuario es miembro
  * - Crear nueva cuenta (Individual o Group)
- * - Unirse a cuenta de grupo usando joinCode
+ * - Unirse a cuenta de grupo usando inviteCode
  * - Calcular balance de cuenta desde transacciones
- * - Generar joinCode único para cuentas de grupo
+ * - Generar inviteCode único para cuentas de grupo
  */
 
 import { db } from '@/config/firebase';
@@ -32,7 +32,7 @@ import {
  * 
  * @returns Código único de 6 caracteres (ej: "A1B2C3")
  */
-export function generateJoinCode(): string {
+export function generateinviteCode(): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
   let code = '';
   for (let i = 0; i < 6; i++) {
@@ -42,35 +42,35 @@ export function generateJoinCode(): string {
 }
 
 /**
- * Verifica si un joinCode ya existe en Firestore
+ * Verifica si un inviteCode ya existe en Firestore
  * 
- * @param joinCode - El código a verificar
+ * @param inviteCode - El código a verificar
  * @returns true si el código existe, false si no
  */
-async function joinCodeExists(joinCode: string): Promise<boolean> {
+async function inviteCodeExists(inviteCode: string): Promise<boolean> {
   try {
     const accountsRef = collection(db, 'accounts');
-    const q = query(accountsRef, where('joinCode', '==', joinCode));
+    const q = query(accountsRef, where('inviteCode', '==', inviteCode));
     const querySnapshot = await getDocs(q);
     return !querySnapshot.empty;
   } catch (error) {
-    console.error('Error verificando joinCode:', error);
+    console.error('Error verificando inviteCode:', error);
     return false;
   }
 }
 
 /**
- * Genera un joinCode único (verifica que no exista)
+ * Genera un inviteCode único (verifica que no exista)
  * 
  * @returns Código único de 6 caracteres
  */
-async function generateUniqueJoinCode(): Promise<string> {
-  let code = generateJoinCode();
+async function generateUniqueinviteCode(): Promise<string> {
+  let code = generateinviteCode();
   let attempts = 0;
   const maxAttempts = 10;
 
-  while (await joinCodeExists(code) && attempts < maxAttempts) {
-    code = generateJoinCode();
+  while (await inviteCodeExists(code) && attempts < maxAttempts) {
+    code = generateinviteCode();
     attempts++;
   }
 
@@ -145,7 +145,7 @@ export async function getUserAccounts(userId: string): Promise<AccountWithBalanc
           currency: accountData.currency,
           ownerId: accountData.ownerId,
           memberIds,
-          joinCode: accountData.joinCode || undefined,
+          inviteCode: accountData.inviteCode || undefined,
           createdAt: accountData.createdAt,
           updatedAt: accountData.updatedAt,
         } as Account;
@@ -218,7 +218,7 @@ export function subscribeToUserAccounts(
                 currency: accountData.currency,
                 ownerId: accountData.ownerId,
                 memberIds,
-                joinCode: accountData.joinCode || undefined,
+                inviteCode: accountData.inviteCode || undefined,
                 createdAt: accountData.createdAt,
                 updatedAt: accountData.updatedAt,
               } as Account;
@@ -300,9 +300,9 @@ export async function createAccount(
       updatedAt: serverTimestamp() as any,
     };
 
-    // Si es un grupo, generar joinCode único
+    // Si es un grupo, generar inviteCode único
     if (accountData.type === 'GROUP') {
-      newAccount.joinCode = await generateUniqueJoinCode();
+      newAccount.inviteCode = await generateUniqueinviteCode();
     }
 
     // Agregar documento a Firestore
@@ -325,7 +325,7 @@ export async function createAccount(
  * @param inviteCode - El código de invitación a buscar
  * @returns La cuenta encontrada o null si no existe
  */
-export async function findAccountByJoinCode(inviteCode: string): Promise<Account | null> {
+export async function findAccountByinviteCode(inviteCode: string): Promise<Account | null> {
   try {
     const accountsRef = collection(db, 'accounts');
     const q = query(accountsRef, where('inviteCode', '==', inviteCode));
@@ -346,12 +346,12 @@ export async function findAccountByJoinCode(inviteCode: string): Promise<Account
       currency: accountData.currency,
       ownerId: accountData.ownerId,
       memberIds,
-      joinCode: accountData.joinCode || undefined,
+      inviteCode: accountData.inviteCode || undefined,
       createdAt: accountData.createdAt,
       updatedAt: accountData.updatedAt,
     } as Account;
   } catch (error) {
-    console.error('Error buscando cuenta por joinCode:', error);
+    console.error('Error buscando cuenta por inviteCode:', error);
     throw error;
   }
 }

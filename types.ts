@@ -61,7 +61,7 @@ export interface Account {
    * Solo presente si type === 'GROUP'
    * Formato: alfanumérico (ej: "A1B2C3")
    */
-  joinCode?: string;
+  inviteCode?: string;
   /** Fecha de creación de la cuenta */
   createdAt: FirebaseFirestore.Timestamp;
   /** Fecha de última actualización */

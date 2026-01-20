@@ -10,29 +10,28 @@
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { UniversalDatePicker } from '@/components/UniversalDatePicker';
+import { db } from '@/config/firebase';
 import { Colors } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useTheme } from '@/contexts/ThemeContext';
-import type { Account } from '@/types';
+import { subscribeToAccountTransactions } from '@/services/transactions';
+import type { Account, Transaction, User } from '@/types';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native';
-import { UniversalDatePicker } from '@/components/UniversalDatePicker';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { db } from '@/config/firebase';
-import { subscribeToAccountTransactions } from '@/services/transactions';
-import type { Transaction, User } from '@/types';
 
 export default function TransactionsFilterScreen() {
   const router = useRouter();
@@ -118,7 +117,7 @@ export default function TransactionsFilterScreen() {
           currency: accountData.currency,
           ownerId: accountData.ownerId,
           memberIds: accountData.memberIds,
-          joinCode: accountData.joinCode || undefined,
+          inviteCode: accountData.inviteCode || undefined,
           createdAt: accountData.createdAt,
           updatedAt: accountData.updatedAt,
         } as Account;

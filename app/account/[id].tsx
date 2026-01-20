@@ -25,29 +25,28 @@ import { MaterialIcons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
-  collection,
-  deleteDoc,
-  doc,
-  getDoc,
-  getDocs,
-  onSnapshot,
-  writeBatch,
-  type DocumentSnapshot,
-  type Timestamp,
+    collection,
+    deleteDoc,
+    doc,
+    getDoc,
+    getDocs,
+    onSnapshot,
+    writeBatch,
+    type DocumentSnapshot,
+    type Timestamp,
 } from 'firebase/firestore';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  FlatList,
-  Modal,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    Modal,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -73,7 +72,7 @@ export default function AccountDetailsScreen() {
   const [balance, setBalance] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(true);
   const [deleting, setDeleting] = useState<boolean>(false);
-  const [showJoinCode, setShowJoinCode] = useState<boolean>(false);
+  const [showinviteCode, setShowinviteCode] = useState<boolean>(false);
   const [showFilterModal, setShowFilterModal] = useState<boolean>(false);
   const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState<boolean>(false);
   const [showDeleteWarningModal, setShowDeleteWarningModal] = useState<boolean>(false);
@@ -114,7 +113,7 @@ export default function AccountDetailsScreen() {
         currency: accountData.currency,
         ownerId: accountData.ownerId,
         memberIds,
-        joinCode: accountData.joinCode || undefined,
+        inviteCode: accountData.inviteCode || undefined,
         createdAt: accountData.createdAt,
         updatedAt: accountData.updatedAt,
       } as Account;
@@ -227,7 +226,7 @@ export default function AccountDetailsScreen() {
             currency: accountData.currency,
             ownerId: accountData.ownerId,
             memberIds,
-            joinCode: accountData.joinCode || undefined,
+            inviteCode: accountData.inviteCode || undefined,
             createdAt: accountData.createdAt,
             updatedAt: accountData.updatedAt,
           } as Account;
@@ -339,11 +338,11 @@ export default function AccountDetailsScreen() {
   /**
    * Copia el join code al portapapeles
    */
-  const handleCopyJoinCode = async (): Promise<void> => {
-    if (!account?.joinCode) return;
+  const handleCopyinviteCode = async (): Promise<void> => {
+    if (!account?.inviteCode) return;
     
     try {
-      await Clipboard.setStringAsync(account.joinCode);
+      await Clipboard.setStringAsync(account.inviteCode);
       setCopied(true);
       
       // Resetear el estado de copiado después de 2 segundos
@@ -574,26 +573,26 @@ export default function AccountDetailsScreen() {
         </View>
 
         {/* Share Code para cuentas GROUP */}
-        {account.type === 'GROUP' && account.joinCode && (
+        {account.type === 'GROUP' && account.inviteCode && (
           <View style={styles.shareCodeContainer}>
             <TouchableOpacity
               style={[styles.shareCodeButton, { backgroundColor: colors.tint }]}
-              onPress={() => setShowJoinCode(!showJoinCode)}>
+              onPress={() => setShowinviteCode(!showinviteCode)}>
               <ThemedText style={styles.shareCodeButtonText}>
-                {showJoinCode ? t('account.share.code.hide') : t('account.share.code.show')}
+                {showinviteCode ? t('account.share.code.hide') : t('account.share.code.show')}
               </ThemedText>
             </TouchableOpacity>
-            {showJoinCode && (
-              <View style={[styles.joinCodeDisplay, { borderColor: colors.tint }]}>
-                <View style={styles.joinCodeContent}>
-                  <View style={styles.joinCodeValueContainer}>
-                    <Text style={[styles.joinCodeValue, { color: colors.text }]}>
-                      {account.joinCode}
+            {showinviteCode && (
+              <View style={[styles.inviteCodeDisplay, { borderColor: colors.tint }]}>
+                <View style={styles.inviteCodeContent}>
+                  <View style={styles.inviteCodeValueContainer}>
+                    <Text style={[styles.inviteCodeValue, { color: colors.text }]}>
+                      {account.inviteCode}
                     </Text>
                   </View>
                   <TouchableOpacity
                     style={[styles.copyButton, { backgroundColor: colors.background, borderColor: colors.icon }, copied && styles.copyButtonActive]}
-                    onPress={handleCopyJoinCode}
+                    onPress={handleCopyinviteCode}
                     activeOpacity={0.7}>
                     {copied ? (
                       <MaterialIcons name="check" size={20} color={colors.success} />
@@ -1281,7 +1280,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     letterSpacing: 0.3,
   },
-  joinCodeDisplay: {
+  inviteCodeDisplay: {
     padding: 20,
     borderRadius: 16,
     borderWidth: 1.5,
@@ -1301,12 +1300,12 @@ const styles = StyleSheet.create({
       },
     }),
   },
-  joinCodeContent: {
+  inviteCodeContent: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 14,
   },
-  joinCodeValueContainer: {
+  inviteCodeValueContainer: {
     flex: 1,
     paddingVertical: 16,
     paddingHorizontal: 20,
@@ -1317,7 +1316,7 @@ const styles = StyleSheet.create({
     minHeight: 56,
     backgroundColor: 'rgba(255, 255, 255, 0.5)',
   },
-  joinCodeValue: {
+  inviteCodeValue: {
     fontSize: 26,
     fontWeight: 'bold',
     letterSpacing: 5,

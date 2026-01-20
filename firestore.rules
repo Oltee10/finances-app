@@ -47,7 +47,7 @@ service cloud.firestore {
      * - currency: 'EUR' | 'USD' | 'COP'
      * - ownerId: string
      * - memberIds: array<string>
-     * - joinCode: string (opcional, solo para GROUP)
+     * - inviteCode: string (opcional, solo para GROUP)
      * - createdAt: timestamp
      * - updatedAt: timestamp
      */

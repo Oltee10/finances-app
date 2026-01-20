@@ -3,8 +3,8 @@
  * 
  * Funcionalidades:
  * - Crear cuenta Individual o Group
- * - Unirse a cuenta de grupo con joinCode
- * - Generación automática de joinCode para grupos
+ * - Unirse a cuenta de grupo con inviteCode
+ * - Generación automática de inviteCode para grupos
  */
 
 import { ThemedText } from '@/components/themed-text';
@@ -52,7 +52,7 @@ export default function AccountCreateScreen() {
   const [accountType, setAccountType] = useState<AccountType>(
     (params.type as AccountType) || 'INDIVIDUAL'
   );
-  const [joinCode, setJoinCode] = useState<string>('');
+  const [inviteCode, setinviteCode] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -71,7 +71,7 @@ export default function AccountCreateScreen() {
     setAccountName('');
     setCurrency('USD');
     setAccountType('INDIVIDUAL');
-    setJoinCode('');
+    setinviteCode('');
     setError(null);
   };
 
@@ -106,12 +106,12 @@ export default function AccountCreateScreen() {
    * Valida el formulario de unión
    */
   const validateJoinForm = (): boolean => {
-    if (!joinCode || joinCode.trim().length === 0) {
+    if (!inviteCode || inviteCode.trim().length === 0) {
       setError('El código de unión es requerido');
       return false;
     }
 
-    if (joinCode.trim().length !== 6) {
+    if (inviteCode.trim().length !== 6) {
       setError('El código de unión debe tener 6 caracteres');
       return false;
     }
@@ -157,7 +157,7 @@ export default function AccountCreateScreen() {
   };
 
   /**
-   * Maneja la unión a grupo con joinCode
+   * Maneja la unión a grupo con inviteCode
    */
   const handleJoinAccount = async (): Promise<void> => {
     if (!user) {
@@ -173,7 +173,7 @@ export default function AccountCreateScreen() {
     setError(null);
 
     try {
-      const code = joinCode.trim().toUpperCase();
+      const code = inviteCode.trim().toUpperCase();
       await joinAccountByCode(code, user.id);
 
       // Éxito: cerrar modal y refrescar lista
@@ -351,7 +351,7 @@ export default function AccountCreateScreen() {
             {/* Formulario de Unión */}
             {mode === 'join' && (
               <View style={styles.form}>
-                {/* Input JoinCode */}
+                {/* Input inviteCode */}
                 <View style={styles.inputContainer}>
                   <ThemedText style={styles.label}>Código de Unión</ThemedText>
                   <ThemedText style={styles.description}>
@@ -360,16 +360,16 @@ export default function AccountCreateScreen() {
                   <TextInput
                     style={[
                       styles.input,
-                      styles.joinCodeInput,
+                      styles.inviteCodeInput,
                       { color: colors.text, borderColor: colors.icon },
                     ]}
                     placeholder="A1B2C3"
                     placeholderTextColor={colors.icon}
-                    value={joinCode}
+                    value={inviteCode}
                     onChangeText={(text) => {
                       // Solo permitir letras y números, máximo 6 caracteres, en mayúsculas
                       const cleaned = text.replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 6);
-                      setJoinCode(cleaned);
+                      setinviteCode(cleaned);
                       setError(null);
                     }}
                     editable={!loading}
@@ -387,10 +387,10 @@ export default function AccountCreateScreen() {
                   style={[
                     styles.button,
                     { backgroundColor: colors.tint },
-                    (joinCode.length !== 6 || loading) && styles.buttonDisabled,
+                    (inviteCode.length !== 6 || loading) && styles.buttonDisabled,
                   ]}
                   onPress={handleSubmit}
-                  disabled={joinCode.length !== 6 || loading}>
+                  disabled={inviteCode.length !== 6 || loading}>
                   {loading ? (
                     <ActivityIndicator size="small" color="#FFFFFF" />
                   ) : (
@@ -469,7 +469,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     backgroundColor: 'transparent',
   },
-  joinCodeInput: {
+  inviteCodeInput: {
     textAlign: 'center',
     fontSize: 24,
     fontWeight: 'bold',
