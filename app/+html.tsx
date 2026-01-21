@@ -14,8 +14,9 @@ export default function Root({ children }: PropsWithChildren) {
         <meta name="theme-color" content="#ffffff" />
 
         {/* CRITICAL: Paths must start with /finances/ because of sub-directory hosting */}
-        <link rel="icon" type="image/jpeg" href="/finances/icon.jpg?v=fixed" />
-        <link rel="apple-touch-icon" href="/finances/icon.jpg?v=fixed" />
+        {/* Usamos el mismo icono configurado en app.json (web.favicon -> ./public/apple-touch-icon.png) */}
+        <link rel="icon" type="image/png" href="/finances/apple-touch-icon.png?v=fixed" />
+        <link rel="apple-touch-icon" href="/finances/apple-touch-icon.png?v=fixed" />
         <link rel="manifest" href="/finances/manifest.json" />
 
         {/* 3. BACKGROUND & VIEWPORT FIXES - 100dvh Flex Strategy for Mobile */}
