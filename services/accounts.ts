@@ -28,6 +28,25 @@ import {
 } from 'firebase/firestore';
 
 /**
+ * Actualiza el nombre de una cuenta
+ * 
+ * @param accountId - ID de la cuenta a actualizar
+ * @param newName - Nuevo nombre para la cuenta
+ */
+export async function updateAccountName(accountId: string, newName: string): Promise<void> {
+  try {
+    const accountRef = doc(db, 'accounts', accountId);
+    await updateDoc(accountRef, {
+      name: newName.trim(),
+      updatedAt: serverTimestamp(),
+    });
+  } catch (error) {
+    console.error('Error actualizando nombre de cuenta:', error);
+    throw error;
+  }
+}
+
+/**
  * Genera un código de unión aleatorio de 6 caracteres alfanuméricos
  * 
  * @returns Código único de 6 caracteres (ej: "A1B2C3")

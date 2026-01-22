@@ -220,6 +220,53 @@ export function subscribeToAccountTransactions(
 }
 
 /**
+ * Actualiza una transacción existente
+ * 
+ * @param accountId - ID de la cuenta
+ * @param transactionId - ID de la transacción a actualizar
+ * @param updates - Campos a actualizar
+ */
+export async function updateTransaction(
+  accountId: string,
+  transactionId: string,
+  updates: Partial<Omit<Transaction, 'id' | 'accountId' | 'userId' | 'createdAt'>>
+): Promise<void> {
+  try {
+    // Usar subcolección: accounts/{accountId}/transactions/{transactionId}
+    const transactionRef = doc(db, 'accounts', accountId, 'transactions', transactionId);
+    
+    // Preparar los datos de actualización
+    const updateData: any = {};
+    
+    if (updates.type !== undefined) updateData.type = updates.type;
+    if (updates.amount !== undefined) updateData.amount = Math.abs(updates.amount);
+    if (updates.category !== undefined) updateData.category = updates.category.trim();
+    if (updates.paymentMethod !== undefined) updateData.paymentMethod = updates.paymentMethod;
+    if (updates.date !== undefined) updateData.date = updates.date;
+    
+    // Manejar la nota (puede ser string o undefined para eliminarla)
+    if (updates.note !== undefined) {
+      const trimmedNote = updates.note?.trim();
+      if (trimmedNote && trimmedNote.length > 0) {
+        updateData.note = trimmedNote;
+      } else {
+        // Si la nota está vacía, eliminarla del documento
+        updateData.note = null;
+      }
+    }
+
+    await updateDoc(transactionRef, updateData);
+
+    // Actualizar el documento padre de la cuenta para disparar el listener
+    const accountRef = doc(db, 'accounts', accountId);
+    await updateDoc(accountRef, { updatedAt: serverTimestamp() });
+  } catch (error) {
+    console.error('Error actualizando transacción:', error);
+    throw error;
+  }
+}
+
+/**
  * Elimina una transacción
  * 
  * @param accountId - ID de la cuenta

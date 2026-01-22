@@ -19,7 +19,8 @@ import { Colors } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useTheme } from '@/contexts/ThemeContext';
-import { calculateBalance, subscribeToAccountTransactions } from '@/services/transactions';
+import { calculateBalance, subscribeToAccountTransactions, deleteTransaction } from '@/services/transactions';
+import { updateAccountName } from '@/services/accounts';
 import type { Account, Transaction } from '@/types';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
@@ -76,6 +77,11 @@ export default function AccountDetailsScreen() {
   const [showFilterModal, setShowFilterModal] = useState<boolean>(false);
   const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState<boolean>(false);
   const [showDeleteWarningModal, setShowDeleteWarningModal] = useState<boolean>(false);
+  const [showDeleteTransactionModal, setShowDeleteTransactionModal] = useState<boolean>(false);
+  const [transactionToDelete, setTransactionToDelete] = useState<Transaction | null>(null);
+  const [editingName, setEditingName] = useState<boolean>(false);
+  const [newAccountName, setNewAccountName] = useState<string>('');
+  const [savingName, setSavingName] = useState<boolean>(false);
   
   // Filtros
   const [filterType, setFilterType] = useState<'ALL' | 'INCOME' | 'EXPENSE'>('ALL');
@@ -443,6 +449,21 @@ export default function AccountDetailsScreen() {
     const iconName = isIncome ? 'arrow-upward' : 'arrow-downward';
     const paymentMethodIcon = item.paymentMethod === 'CASH' ? '💵' : '💳';
 
+    const handleEdit = () => {
+      router.push({
+        pathname: '/transaction-edit',
+        params: {
+          accountId: item.accountId,
+          transactionId: item.id,
+        },
+      });
+    };
+
+    const handleDelete = () => {
+      setTransactionToDelete(item);
+      setShowDeleteTransactionModal(true);
+    };
+
     return (
       <View style={[styles.transactionItem, { 
         backgroundColor: colors.background,
@@ -477,6 +498,20 @@ export default function AccountDetailsScreen() {
               {displayAmount}
             </Text>
           </View>
+        </View>
+        <View style={styles.transactionActions}>
+          <TouchableOpacity
+            onPress={handleEdit}
+            style={[styles.editTransactionButton, { backgroundColor: colors.tint + '15' }]}
+            activeOpacity={0.7}>
+            <MaterialIcons name="edit" size={16} color={colors.tint} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={handleDelete}
+            style={[styles.deleteTransactionButton, { backgroundColor: colors.error + '15' }]}
+            activeOpacity={0.7}>
+            <MaterialIcons name="delete-outline" size={16} color={colors.error} />
+          </TouchableOpacity>
         </View>
       </View>
     );
@@ -521,9 +556,71 @@ export default function AccountDetailsScreen() {
 
         <View style={styles.headerContent}>
           <View style={styles.accountNameContainer}>
-            <ThemedText type="title" style={styles.accountName}>
-              {account.name}
-            </ThemedText>
+            {editingName ? (
+              <View style={styles.editNameContainer}>
+                <TextInput
+                  style={[styles.editNameInput, { 
+                    color: colors.text, 
+                    borderColor: colors.tint,
+                    backgroundColor: colors.background,
+                  }]}
+                  value={newAccountName}
+                  onChangeText={setNewAccountName}
+                  placeholder="Nombre de la cuenta"
+                  placeholderTextColor={colors.icon}
+                  autoFocus
+                />
+                <TouchableOpacity
+                  style={[styles.saveNameButton, { backgroundColor: colors.success }]}
+                  onPress={async () => {
+                    if (newAccountName.trim() && accountId) {
+                      setSavingName(true);
+                      try {
+                        await updateAccountName(accountId, newAccountName.trim());
+                        setEditingName(false);
+                        setNewAccountName('');
+                      } catch (error) {
+                        Alert.alert('Error', 'No se pudo actualizar el nombre');
+                      } finally {
+                        setSavingName(false);
+                      }
+                    }
+                  }}
+                  disabled={savingName || !newAccountName.trim()}>
+                  {savingName ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <MaterialIcons name="check" size={20} color="#FFFFFF" />
+                  )}
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.cancelNameButton, { backgroundColor: colors.error + '20' }]}
+                  onPress={() => {
+                    setEditingName(false);
+                    setNewAccountName('');
+                  }}
+                  disabled={savingName}>
+                  <MaterialIcons name="close" size={20} color={colors.error} />
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View style={styles.accountNameRow}>
+                <ThemedText type="title" style={styles.accountName}>
+                  {account.name}
+                </ThemedText>
+                {user?.id === account.ownerId && (
+                  <TouchableOpacity
+                    style={[styles.editNameButton, { backgroundColor: colors.tint + '15' }]}
+                    onPress={() => {
+                      setNewAccountName(account.name);
+                      setEditingName(true);
+                    }}
+                    activeOpacity={0.7}>
+                    <MaterialIcons name="edit" size={18} color={colors.tint} />
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
             <View style={[styles.accountTypeBadge, { backgroundColor: colors.tint + '15' }]}>
               <MaterialIcons 
                 name={account.type === 'GROUP' ? 'group' : 'person'} 
@@ -683,6 +780,15 @@ export default function AccountDetailsScreen() {
               onPress={navigateToAddTransaction}
               activeOpacity={0.8}>
               <Text style={[styles.addTransactionButtonText, { color: '#FFFFFF' }]}>+ {t('account.add_transaction')}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.exportButton, { backgroundColor: colors.tint + '20', borderColor: colors.tint }]}
+              onPress={() => router.push({ pathname: '/transaction-export', params: { accountId } })}
+              activeOpacity={0.8}>
+              <MaterialIcons name="file-download" size={20} color={colors.tint} />
+              <ThemedText style={[styles.exportButtonText, { color: colors.tint }]}>
+                {t('export.export')}
+              </ThemedText>
             </TouchableOpacity>
           </View>
           
@@ -1114,6 +1220,34 @@ export default function AccountDetailsScreen() {
         onCancel={() => setShowDeleteWarningModal(false)}
         cancelable={true}
       />
+
+      {/* Modal de Confirmación de Eliminación de Transacción */}
+      <ConfirmModal
+        visible={showDeleteTransactionModal}
+        title={t('transactions.delete')}
+        message={t('transactions.delete.confirm')}
+        confirmText={t('transactions.delete.delete') || t('common.delete') || 'Eliminar'}
+        cancelText={t('transactions.delete.cancel') || t('common.cancel')}
+        confirmButtonStyle="destructive"
+        onConfirm={async () => {
+          if (transactionToDelete) {
+            try {
+              await deleteTransaction(transactionToDelete.accountId, transactionToDelete.id);
+              setShowDeleteTransactionModal(false);
+              setTransactionToDelete(null);
+            } catch (error) {
+              Alert.alert(t('common.error'), 'No se pudo eliminar la transacción');
+              setShowDeleteTransactionModal(false);
+              setTransactionToDelete(null);
+            }
+          }
+        }}
+        onCancel={() => {
+          setShowDeleteTransactionModal(false);
+          setTransactionToDelete(null);
+        }}
+        cancelable={true}
+      />
     </ThemedView>
   );
 }
@@ -1386,6 +1520,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     marginTop: 24,
     marginBottom: 8,
+    gap: 12,
   },
   addTransactionButton: {
     width: '100%',
@@ -1408,6 +1543,21 @@ const styles = StyleSheet.create({
         boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
       },
     }),
+  },
+  exportButton: {
+    width: '100%',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 8,
+    borderWidth: 1,
+  },
+  exportButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
   },
   addTransactionButtonText: {
     fontSize: 16,
@@ -1462,6 +1612,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
     borderWidth: 1,
     borderColor: 'rgba(128, 128, 128, 0.1)',
+    position: 'relative',
     ...Platform.select({
       ios: {
         // shadowColor handled via theme
@@ -1519,11 +1670,76 @@ const styles = StyleSheet.create({
   transactionRight: {
     alignItems: 'flex-end',
     gap: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   transactionAmount: {
     fontSize: 20,
     fontWeight: 'bold',
     letterSpacing: -0.3,
+  },
+  transactionActions: {
+    flexDirection: 'row',
+    gap: 8,
+    position: 'absolute',
+    bottom: 12,
+    right: 12,
+  },
+  editTransactionButton: {
+    padding: 8,
+    borderRadius: 8,
+    width: 32,
+    height: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  deleteTransactionButton: {
+    padding: 8,
+    borderRadius: 8,
+    width: 32,
+    height: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  accountNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  editNameButton: {
+    padding: 6,
+    borderRadius: 6,
+  },
+  editNameContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flex: 1,
+  },
+  editNameInput: {
+    flex: 1,
+    height: 40,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    fontSize: 20,
+    fontWeight: '700',
+  },
+  saveNameButton: {
+    padding: 8,
+    borderRadius: 8,
+    width: 36,
+    height: 36,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cancelNameButton: {
+    padding: 8,
+    borderRadius: 8,
+    width: 36,
+    height: 36,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   transactionSeparator: {
     height: 12,

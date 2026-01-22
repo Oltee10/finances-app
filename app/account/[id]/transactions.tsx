@@ -366,12 +366,28 @@ export default function AllTransactionsScreen() {
             <Text style={[styles.transactionAmount, { color: amountColor }]}>
               {displayAmount}
             </Text>
-            <TouchableOpacity
-              style={[styles.deleteButton, { backgroundColor: 'rgba(255, 59, 48, 0.1)' }]}
-              onPress={() => handleDeleteTransaction(item)}
-              activeOpacity={0.7}>
-              <MaterialIcons name="delete" size={18} color="#FF3B30" />
-            </TouchableOpacity>
+            <View style={styles.transactionActions}>
+              <TouchableOpacity
+                style={[styles.editButton, { backgroundColor: colors.tint + '15' }]}
+                onPress={() => {
+                  router.push({
+                    pathname: '/transaction-edit',
+                    params: {
+                      accountId: item.accountId,
+                      transactionId: item.id,
+                    },
+                  });
+                }}
+                activeOpacity={0.7}>
+                <MaterialIcons name="edit" size={18} color={colors.tint} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.deleteButton, { backgroundColor: 'rgba(255, 59, 48, 0.1)' }]}
+                onPress={() => handleDeleteTransaction(item)}
+                activeOpacity={0.7}>
+                <MaterialIcons name="delete" size={18} color="#FF3B30" />
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </View>
@@ -855,11 +871,22 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     letterSpacing: -0.3,
   },
+  transactionActions: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 8,
+    alignItems: 'center',
+  },
+  editButton: {
+    paddingHorizontal: 9,
+    paddingVertical: 9,
+    borderRadius: 6,
+    alignItems: 'center',
+  },
   deleteButton: {
     paddingHorizontal: 9,
     paddingVertical: 9,
     borderRadius: 6,
-    marginTop: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },

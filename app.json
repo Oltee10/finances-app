@@ -4,7 +4,7 @@
     "slug": "finances-app",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon_finances_app.png",
+    "icon": "./public/icon.jpg",
     "scheme": "financesapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -14,10 +14,12 @@
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/icon_finances_app.png"
+        "foregroundImage": "./public/icon.jpg"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "icon": "./public/icon.jpg",
+      "package": "com.olte.financesapp"
     },
     "web": {
       "bundler": "metro",
@@ -39,7 +41,7 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/icon_finances_app.png",
+          "image": "./public/icon.jpg",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff",
@@ -54,6 +56,12 @@
       "typedRoutes": true,
       "reactCompiler": true,
       "baseUrl": "/finances"
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "7908369b-d771-4342-a2fd-0458ca6fa17f"
+      }
     }
   }
 }

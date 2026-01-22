@@ -1,23 +1,24 @@
 /**
- * Pantalla Modal para agregar transacciones
+ * Pantalla Modal para editar transacciones
  * 
  * Funcionalidades:
- * - Formulario para agregar INCOME o EXPENSE
- * - Inputs: Amount, Category, Note
+ * - Formulario para editar transacciones existentes
+ * - Inputs: Amount, Category, Note, Date, Payment Method
  * - Selector de tipo (Ingreso/Gasto)
  */
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { UniversalDatePicker } from '@/components/UniversalDatePicker';
 import { db } from '@/config/firebase';
 import { Colors } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useTheme } from '@/contexts/ThemeContext';
-import { createTransaction } from '@/services/transactions';
+import { updateTransaction } from '@/services/transactions';
 import type { Currency, TransactionType, PaymentMethod } from '@/types';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { doc, getDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -60,54 +61,97 @@ const CATEGORY_KEYS = {
   EXPENSE: [...EXPENSE_CATEGORIES_IMPORTANT, ...EXPENSE_CATEGORIES_SECONDARY],
 };
 
-export default function TransactionAddScreen() {
+export default function TransactionEditScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ accountId?: string }>();
+  const params = useLocalSearchParams<{ accountId?: string; transactionId?: string }>();
   const { theme } = useTheme();
   const { user } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const colors = Colors[theme];
 
   const accountId = params.accountId;
+  const transactionId = params.transactionId;
 
   const [transactionType, setTransactionType] = useState<TransactionType>('EXPENSE');
   const [amount, setAmount] = useState<string>('');
-  const [amountRaw, setAmountRaw] = useState<number>(0); // Valor numérico real para la BD
+  const [amountRaw, setAmountRaw] = useState<number>(0);
   const [category, setCategory] = useState<string>('');
   const [note, setNote] = useState<string>('');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('CARD');
   const [loading, setLoading] = useState<boolean>(false);
+  const [loadingData, setLoadingData] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [currency, setCurrency] = useState<Currency>('USD');
   const [showMoreCategories, setShowMoreCategories] = useState<boolean>(false);
+  const [transactionDate, setTransactionDate] = useState<Date>(new Date());
+  const [showDatePicker, setShowDatePicker] = useState<boolean>(false);
+
+  const datePickerLocale = language === 'es' ? 'es-ES' : 'en-US';
 
   /**
-   * Carga la información de la cuenta para obtener el currency
+   * Carga la transacción existente
    */
   useEffect(() => {
-    const loadAccount = async () => {
-      if (!accountId) return;
+    const loadTransaction = async () => {
+      if (!accountId || !transactionId) {
+        Alert.alert(t('common.error'), 'ID de transacción no válido');
+        router.back();
+        return;
+      }
 
       try {
+        setLoadingData(true);
+        
+        // Cargar información de la cuenta para obtener currency
         const accountRef = doc(db, 'accounts', accountId);
         const accountDoc = await getDoc(accountRef);
         if (accountDoc.exists()) {
           const accountData = accountDoc.data();
           setCurrency(accountData.currency || 'USD');
         }
+
+        // Cargar la transacción
+        const transactionRef = doc(db, 'accounts', accountId, 'transactions', transactionId);
+        const transactionDoc = await getDoc(transactionRef);
+        
+        if (!transactionDoc.exists()) {
+          Alert.alert(t('common.error'), 'Transacción no encontrada');
+          router.back();
+          return;
+        }
+
+        const transactionData = transactionDoc.data();
+        
+        // Establecer los valores del formulario
+        setTransactionType(transactionData.type);
+        setAmountRaw(transactionData.amount);
+        setCategory(transactionData.category);
+        setPaymentMethod(transactionData.paymentMethod || 'CARD');
+        setNote(transactionData.note || '');
+        
+        // Formatear el monto para mostrar
+        const { formatted } = formatCurrencyInput(transactionData.amount.toString(), transactionData.currency || 'USD');
+        setAmount(formatted);
+        
+        // Establecer la fecha
+        if (transactionData.date) {
+          const date = transactionData.date.toDate();
+          setTransactionDate(date);
+        }
       } catch (error) {
-        console.error('Error cargando cuenta:', error);
+        console.error('Error cargando transacción:', error);
+        Alert.alert(t('common.error'), 'Error al cargar la transacción');
+        router.back();
+      } finally {
+        setLoadingData(false);
       }
     };
 
-    loadAccount();
-  }, [accountId]);
+    loadTransaction();
+  }, [accountId, transactionId]);
 
   /**
    * Formatea el input de moneda según el tipo de moneda
-   * COP: solo enteros con puntos como separadores de miles (1.000)
-   * EUR: decimales con coma, puntos para miles (1.200,50)
-   * USD: decimales con punto, comas para miles (1,200.50)
    */
   const formatCurrencyInput = (value: string, currency: Currency): { formatted: string; raw: number } => {
     if (!value || value.trim().length === 0) {
@@ -115,8 +159,6 @@ export default function TransactionAddScreen() {
     }
 
     if (currency === 'COP') {
-      // COP: solo enteros con puntos como separadores de miles
-      // Extraer solo números
       const numericValue = value.replace(/[^0-9]/g, '');
       if (!numericValue) {
         return { formatted: '', raw: 0 };
@@ -125,7 +167,6 @@ export default function TransactionAddScreen() {
       const formatted = integerValue.toLocaleString('es-CO');
       return { formatted, raw: integerValue };
     } else if (currency === 'EUR' || currency === 'USD') {
-      // EUR: decimales con coma, puntos para miles (1.200,50)
       const hasComma = value.includes(',');
       
       if (hasComma) {
@@ -142,7 +183,6 @@ export default function TransactionAddScreen() {
         
         return { formatted, raw };
       } else {
-        // Solo enteros
         const numericValue = value.replace(/[^0-9]/g, '');
         if (!numericValue) {
           return { formatted: '', raw: 0 };
@@ -151,53 +191,16 @@ export default function TransactionAddScreen() {
         const formatted = integerValue.toLocaleString('de-DE');
         return { formatted, raw: integerValue };
       }
-    } else {
-      // USD: decimales con punto, comas para miles (1,200.50)
-      const hasDot = value.includes('.');
-      
-      if (hasDot) {
-        const parts = value.split('.');
-        const integerPart = parts[0].replace(/[^0-9]/g, '');
-        const decimalPart = parts[1]?.replace(/[^0-9]/g, '').slice(0, 2) || '';
-        
-        const integerValue = integerPart ? parseInt(integerPart, 10) : 0;
-        const decimalValue = decimalPart ? parseInt(decimalPart, 10) / Math.pow(10, decimalPart.length) : 0;
-        
-        const formattedInteger = integerValue.toLocaleString('en-US');
-        const formatted = decimalPart ? `${formattedInteger}.${decimalPart}` : `${formattedInteger}.`;
-        const raw = integerValue + decimalValue;
-        
-        return { formatted, raw };
-      } else {
-        // Solo enteros
-        const numericValue = value.replace(/[^0-9]/g, '');
-        if (!numericValue) {
-          return { formatted: '', raw: 0 };
-        }
-        const integerValue = parseInt(numericValue, 10);
-        const formatted = integerValue.toLocaleString('en-US');
-        return { formatted, raw: integerValue };
-      }
     }
-  };
 
-  /**
-   * Limpia el formulario
-   */
-  const resetForm = (): void => {
-    setAmount('');
-    setAmountRaw(0);
-    setCategory('');
-    setNote('');
-    setPaymentMethod('CARD');
-    setError(null);
+    return { formatted: value, raw: parseFloat(value) || 0 };
   };
 
   /**
    * Valida el formulario
    */
   const validateForm = (): boolean => {
-    if (amountRaw <= 0) {
+    if (!amount || amountRaw <= 0) {
       setError(t('transaction.add.validation.amount.required'));
       return false;
     }
@@ -212,16 +215,16 @@ export default function TransactionAddScreen() {
   };
 
   /**
-   * Maneja la creación de la transacción
+   * Maneja la actualización de la transacción
    */
-  const handleCreateTransaction = async (): Promise<void> => {
+  const handleUpdateTransaction = async (): Promise<void> => {
     if (!user) {
       Alert.alert(t('common.error'), t('transaction.add.error.not.authenticated'));
       return;
     }
 
-    if (!accountId) {
-      Alert.alert(t('common.error'), t('transaction.add.error.no.account.id'));
+    if (!accountId || !transactionId) {
+      Alert.alert(t('common.error'), 'ID de transacción no válido');
       router.back();
       return;
     }
@@ -234,17 +237,20 @@ export default function TransactionAddScreen() {
     setError(null);
 
     try {
-      await createTransaction(
+      // Convertir la fecha a Timestamp de Firestore
+      const dateTimestamp = Timestamp.fromDate(transactionDate);
+
+      await updateTransaction(
+        accountId,
+        transactionId,
         {
-          accountId,
           type: transactionType,
           amount: amountRaw,
           category: category.trim(),
           paymentMethod,
           note: note.trim() || undefined,
-          date: serverTimestamp(),
-        },
-        user.id
+          date: dateTimestamp,
+        }
       );
 
       // Éxito: cerrar modal y refrescar lista
@@ -271,7 +277,6 @@ export default function TransactionAddScreen() {
     if (transactionType === 'INCOME') {
       return CATEGORY_KEYS.INCOME;
     } else {
-      // Para EXPENSE, mostrar importantes primero, luego secundarias si showMoreCategories
       if (showMoreCategories) {
         return CATEGORY_KEYS.EXPENSE;
       } else {
@@ -283,9 +288,17 @@ export default function TransactionAddScreen() {
   const categoryKeys = getCategoryKeys();
   const categories = categoryKeys.map((key: string) => t(key));
   const typeColor = transactionType === 'INCOME' ? colors.success : colors.error;
-  
-  // Determinar si mostrar el botón "Ver más" (solo para EXPENSE y cuando no se muestran todas)
-  const showViewMoreButton = transactionType === 'EXPENSE' && !showMoreCategories;
+
+  if (loadingData) {
+    return (
+      <ThemedView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.tint} />
+          <ThemedText style={styles.loadingText}>Cargando transacción...</ThemedText>
+        </View>
+      </ThemedView>
+    );
+  }
 
   return (
     <ThemedView style={styles.container}>
@@ -300,7 +313,7 @@ export default function TransactionAddScreen() {
             {/* Header */}
             <View style={styles.header}>
               <ThemedText type="title" style={styles.title}>
-                {t('transaction.add.title')}
+                {t('transaction.edit')}
               </ThemedText>
             </View>
 
@@ -368,6 +381,51 @@ export default function TransactionAddScreen() {
                 keyboardType={currency === 'COP' ? 'number-pad' : 'decimal-pad'}
                 editable={!loading}
               />
+            </View>
+
+            {/* Selector de Fecha */}
+            <View style={styles.inputContainer}>
+              <ThemedText style={styles.label}>{t('transaction.add.date')}</ThemedText>
+              <TouchableOpacity
+                style={[styles.dateButton, { borderColor: colors.icon }]}
+                onPress={() => setShowDatePicker(!showDatePicker)}
+                activeOpacity={0.7}>
+                <ThemedText style={[styles.dateButtonText, { color: colors.text }]}>
+                  {transactionDate.toLocaleDateString(datePickerLocale, {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                  })}
+                </ThemedText>
+              </TouchableOpacity>
+              {showDatePicker && (
+                <View style={styles.datePickerContainer}>
+                  <UniversalDatePicker
+                    value={transactionDate}
+                    mode="date"
+                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                    locale={datePickerLocale}
+                    textColor={theme === 'dark' ? '#FFFFFF' : '#000000'}
+                    themeVariant={theme === 'dark' ? 'dark' : 'light'}
+                    onChange={(selectedDate) => {
+                      if (Platform.OS === 'android') {
+                        setShowDatePicker(false);
+                      }
+                      setTransactionDate(selectedDate);
+                    }}
+                    maximumDate={new Date()}
+                  />
+                  {Platform.OS === 'ios' && (
+                    <TouchableOpacity
+                      style={[styles.datePickerButton, { backgroundColor: colors.tint }]}
+                      onPress={() => setShowDatePicker(false)}>
+                      <ThemedText style={[styles.datePickerButtonText, { color: '#FFFFFF' }]}>
+                        {t('common.confirm')}
+                      </ThemedText>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              )}
             </View>
 
             {/* Selector de Método de Pago */}
@@ -493,20 +551,20 @@ export default function TransactionAddScreen() {
             {/* Error */}
             {error && <ThemedText style={[styles.errorText, { color: colors.error }]}>{error}</ThemedText>}
 
-            {/* Botón Crear */}
+            {/* Botón Guardar */}
             <TouchableOpacity
               style={[
                 styles.button,
                 { backgroundColor: typeColor },
                 (!amount || !category || loading) && styles.buttonDisabled,
               ]}
-              onPress={handleCreateTransaction}
+              onPress={handleUpdateTransaction}
               disabled={!amount || !category || loading}>
               {loading ? (
                 <ActivityIndicator size="small" color="#FFFFFF" />
               ) : (
                 <ThemedText style={[styles.buttonText, { color: '#FFFFFF' }]}>
-                  {transactionType === 'INCOME' ? t('transaction.add.create.income') : t('transaction.add.create.expense')}
+                  {t('transaction.edit.save')}
                 </ThemedText>
               )}
             </TouchableOpacity>
@@ -517,7 +575,7 @@ export default function TransactionAddScreen() {
               onPress={() => router.back()}
               disabled={loading}>
               <ThemedText style={[styles.cancelButtonText, { color: colors.icon }]}>
-                {t('transaction.add.cancel')}
+                {t('transaction.edit.cancel')}
               </ThemedText>
             </TouchableOpacity>
           </ThemedView>
@@ -575,7 +633,6 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   typeButtonTextActive: {
-    // color handled inline
     opacity: 1,
   },
   input: {
@@ -594,7 +651,6 @@ const styles = StyleSheet.create({
   categorySelector: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    flexWrap: 'wrap',
     gap: 8,
   },
   categoryButton: {
@@ -611,7 +667,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   categoryButtonTextActive: {
-    // color handled inline
     opacity: 1,
   },
   noteInput: {
@@ -658,5 +713,42 @@ const styles = StyleSheet.create({
   viewMoreButtonText: {
     fontSize: 14,
     fontWeight: '600',
+  },
+  dateButton: {
+    height: 50,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    justifyContent: 'center',
+    backgroundColor: 'transparent',
+  },
+  dateButtonText: {
+    fontSize: 16,
+  },
+  datePickerContainer: {
+    marginTop: 12,
+    alignSelf: 'flex-start',
+    width: '100%',
+  },
+  datePickerButton: {
+    marginTop: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  datePickerButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 16,
+  },
+  loadingText: {
+    fontSize: 16,
+    opacity: 0.7,
   },
 });

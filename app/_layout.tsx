@@ -94,6 +94,14 @@ function RootLayoutNav() {
         name="transaction-add"
         options={{ presentation: 'modal', title: 'Nueva Transacción', headerShown: false }}
       />
+      <Stack.Screen
+        name="transaction-edit"
+        options={{ presentation: 'modal', title: 'Editar Transacción', headerShown: false }}
+      />
+      <Stack.Screen
+        name="transaction-export"
+        options={{ presentation: 'modal', title: 'Exportar Transacción', headerShown: false }}
+      />
     </Stack>
   );
 
