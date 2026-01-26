@@ -48,7 +48,7 @@ export default function AccountCreateScreen() {
   // Estado del formulario de creación
   const [mode, setMode] = useState<'create' | 'join'>('create');
   const [accountName, setAccountName] = useState<string>('');
-  const [currency, setCurrency] = useState<Currency>('USD');
+  const [currency, setCurrency] = useState<Currency>('EUR');
   const [accountType, setAccountType] = useState<AccountType>(
     (params.type as AccountType) || 'INDIVIDUAL'
   );
@@ -69,7 +69,7 @@ export default function AccountCreateScreen() {
    */
   const resetForm = (): void => {
     setAccountName('');
-    setCurrency('USD');
+    setCurrency('EUR');
     setAccountType('INDIVIDUAL');
     setinviteCode('');
     setError(null);

@@ -444,10 +444,10 @@ export default function AccountDetailsScreen() {
   const renderTransaction = ({ item }: { item: Transaction }) => {
     const isIncome = item.type === 'INCOME';
     const amountColor = isIncome ? '#34C759' : '#FF3B30';
-    const formattedAmount = formatTransactionAmount(item.amount, account?.currency || 'USD');
+    const formattedAmount = formatTransactionAmount(item.amount, account?.currency || 'EUR');
     const displayAmount = isIncome ? `+${formattedAmount}` : `-${formattedAmount}`;
     const iconName = isIncome ? 'arrow-upward' : 'arrow-downward';
-    const paymentMethodIcon = item.paymentMethod === 'CASH' ? '💵' : '💳';
+    const paymentMethodIcon = item.paymentMethod === 'CASH' ? '💵' : item.paymentMethod === 'VISA' ? '💳' : '💳';
 
     const handleEdit = () => {
       router.push({

@@ -69,7 +69,7 @@ export default function AllTransactionsScreen() {
   const [filterMaxAmount, setFilterMaxAmount] = useState<number | null>(null);
   const [filterStartDate, setFilterStartDate] = useState<Date | null>(null);
   const [filterEndDate, setFilterEndDate] = useState<Date | null>(null);
-  const [filterPaymentMethod, setFilterPaymentMethod] = useState<'ALL' | 'CASH' | 'CARD' | null>('ALL');
+  const [filterPaymentMethod, setFilterPaymentMethod] = useState<'ALL' | 'CASH' | 'CARD' | 'VISA' | null>('ALL');
   const [sortOrder, setSortOrder] = useState<'newest' | 'oldest' | 'highest' | 'lowest'>('newest');
 
   /**
@@ -328,10 +328,10 @@ export default function AllTransactionsScreen() {
   const renderTransaction = ({ item }: { item: Transaction }) => {
     const isIncome = item.type === 'INCOME';
     const amountColor = isIncome ? '#34C759' : '#FF3B30';
-    const formattedAmount = formatTransactionAmount(item.amount, account?.currency || 'USD');
+    const formattedAmount = formatTransactionAmount(item.amount, account?.currency || 'EUR');
     const displayAmount = isIncome ? `+${formattedAmount}` : `-${formattedAmount}`;
     const iconName = isIncome ? 'arrow-upward' : 'arrow-downward';
-    const paymentMethodIcon = item.paymentMethod === 'CASH' ? '💵' : '💳';
+    const paymentMethodIcon = item.paymentMethod === 'CASH' ? '💵' : item.paymentMethod === 'VISA' ? '💳' : '💳';
 
     return (
       <View style={[styles.transactionItem, { 

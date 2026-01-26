@@ -21,7 +21,7 @@ export type TransactionType = 'INCOME' | 'EXPENSE';
 /**
  * Método de pago
  */
-export type PaymentMethod = 'CASH' | 'CARD';
+export type PaymentMethod = 'CASH' | 'CARD' | 'VISA';
 
 /**
  * Usuario

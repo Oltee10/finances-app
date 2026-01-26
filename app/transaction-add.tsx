@@ -15,7 +15,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { createTransaction } from '@/services/transactions';
-import type { Currency, TransactionType, PaymentMethod } from '@/types';
+import type { Currency, PaymentMethod, TransactionType } from '@/types';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { doc, getDoc, serverTimestamp } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
@@ -78,7 +78,7 @@ export default function TransactionAddScreen() {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('CARD');
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [currency, setCurrency] = useState<Currency>('USD');
+  const [currency, setCurrency] = useState<Currency>('EUR');
   const [showMoreCategories, setShowMoreCategories] = useState<boolean>(false);
 
   /**
@@ -93,7 +93,7 @@ export default function TransactionAddScreen() {
         const accountDoc = await getDoc(accountRef);
         if (accountDoc.exists()) {
           const accountData = accountDoc.data();
-          setCurrency(accountData.currency || 'USD');
+          setCurrency(accountData.currency || 'EUR');
         }
       } catch (error) {
         console.error('Error cargando cuenta:', error);
@@ -416,6 +416,29 @@ export default function TransactionAddScreen() {
                     💳 {t('transaction.add.payment.card')}
                   </ThemedText>
                 </TouchableOpacity>
+                {user?.username === 'Lina' && (
+                  <TouchableOpacity
+                    style={[
+                      styles.typeButton,
+                      paymentMethod === 'VISA' && {
+                        backgroundColor: colors.tint,
+                      },
+                      { borderColor: colors.icon },
+                    ]}
+                    onPress={() => {
+                      setPaymentMethod('VISA');
+                      setError(null);
+                    }}
+                    disabled={loading}>
+                    <ThemedText
+                      style={[
+                        styles.typeButtonText,
+                        paymentMethod === 'VISA' && [styles.typeButtonTextActive, { color: '#FFFFFF' }],
+                      ]}>
+                      💳 {t('transaction.add.payment.visa')}
+                    </ThemedText>
+                  </TouchableOpacity>
+                )}
               </View>
             </View>
 

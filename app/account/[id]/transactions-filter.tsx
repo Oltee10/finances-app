@@ -59,7 +59,7 @@ export default function TransactionsFilterScreen() {
   const [filterMaxAmount, setFilterMaxAmount] = useState<number | null>(null);
   const [filterStartDate, setFilterStartDate] = useState<Date | null>(null);
   const [filterEndDate, setFilterEndDate] = useState<Date | null>(null);
-  const [filterPaymentMethod, setFilterPaymentMethod] = useState<'ALL' | 'CASH' | 'CARD'>('ALL');
+  const [filterPaymentMethod, setFilterPaymentMethod] = useState<'ALL' | 'CASH' | 'CARD' | 'VISA'>('ALL');
   const [showStartDatePicker, setShowStartDatePicker] = useState<boolean>(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState<boolean>(false);
 
@@ -519,6 +519,26 @@ export default function TransactionsFilterScreen() {
                     💳 {t('transactions.filter.payment.card')}
                   </ThemedText>
                 </TouchableOpacity>
+                {user?.username === 'Lina' && (
+                  <TouchableOpacity
+                    style={[
+                      styles.typeButton,
+                      filterPaymentMethod === 'VISA' && {
+                        backgroundColor: colors.tint,
+                      },
+                      { borderColor: colors.icon },
+                    ]}
+                    onPress={() => setFilterPaymentMethod('VISA')}
+                    activeOpacity={0.7}>
+                    <ThemedText
+                      style={[
+                        styles.typeButtonText,
+                        filterPaymentMethod === 'VISA' && [styles.typeButtonTextActive, { color: '#FFFFFF' }],
+                      ]}>
+                      💳 {t('transactions.filter.payment.visa')}
+                    </ThemedText>
+                  </TouchableOpacity>
+                )}
               </View>
             </View>
 

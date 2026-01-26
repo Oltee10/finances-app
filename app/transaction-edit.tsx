@@ -16,9 +16,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { updateTransaction } from '@/services/transactions';
-import type { Currency, TransactionType, PaymentMethod } from '@/types';
+import type { Currency, PaymentMethod, TransactionType } from '@/types';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { doc, getDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
+import { doc, getDoc, Timestamp } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -81,7 +81,7 @@ export default function TransactionEditScreen() {
   const [loading, setLoading] = useState<boolean>(false);
   const [loadingData, setLoadingData] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [currency, setCurrency] = useState<Currency>('USD');
+  const [currency, setCurrency] = useState<Currency>('EUR');
   const [showMoreCategories, setShowMoreCategories] = useState<boolean>(false);
   const [transactionDate, setTransactionDate] = useState<Date>(new Date());
   const [showDatePicker, setShowDatePicker] = useState<boolean>(false);
@@ -107,7 +107,7 @@ export default function TransactionEditScreen() {
         const accountDoc = await getDoc(accountRef);
         if (accountDoc.exists()) {
           const accountData = accountDoc.data();
-          setCurrency(accountData.currency || 'USD');
+          setCurrency(accountData.currency || 'EUR');
         }
 
         // Cargar la transacción
@@ -130,7 +130,7 @@ export default function TransactionEditScreen() {
         setNote(transactionData.note || '');
         
         // Formatear el monto para mostrar
-        const { formatted } = formatCurrencyInput(transactionData.amount.toString(), transactionData.currency || 'USD');
+        const { formatted } = formatCurrencyInput(transactionData.amount.toString(), transactionData.currency || 'EUR');
         setAmount(formatted);
         
         // Establecer la fecha
@@ -474,6 +474,29 @@ export default function TransactionEditScreen() {
                     💳 {t('transaction.add.payment.card')}
                   </ThemedText>
                 </TouchableOpacity>
+                {user?.username === 'Lina' && (
+                  <TouchableOpacity
+                    style={[
+                      styles.typeButton,
+                      paymentMethod === 'VISA' && {
+                        backgroundColor: colors.tint,
+                      },
+                      { borderColor: colors.icon },
+                    ]}
+                    onPress={() => {
+                      setPaymentMethod('VISA');
+                      setError(null);
+                    }}
+                    disabled={loading}>
+                    <ThemedText
+                      style={[
+                        styles.typeButtonText,
+                        paymentMethod === 'VISA' && [styles.typeButtonTextActive, { color: '#FFFFFF' }],
+                      ]}>
+                      💳 {t('transaction.add.payment.visa')}
+                    </ThemedText>
+                  </TouchableOpacity>
+                )}
               </View>
             </View>
 

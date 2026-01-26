@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "finances-app",
+    "name": "FINANZAS",
     "slug": "finances-app",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -54,7 +54,6 @@
     ],
     "experiments": {
       "typedRoutes": true,
-      "reactCompiler": true,
       "baseUrl": "/finances"
     },
     "extra": {
