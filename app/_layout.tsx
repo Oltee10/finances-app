@@ -3,7 +3,9 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { ActivityIndicator, Platform, StyleSheet, View } from 'react-native';
-import 'react-native-reanimated';
+
+// Nota: react-native-reanimated se importa directamente en los componentes que lo necesitan
+// (hello-wave.tsx, parallax-scroll-view.tsx) para evitar problemas durante el export para web
 
 import { WebContainer } from '@/components/WebContainer';
 import { Colors } from '@/constants/theme';
